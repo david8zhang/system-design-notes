@@ -41,12 +41,12 @@ Let's look at 2 ways we can ensure fault tolerance in our load balancer setups.
 
 In an active-active setup, we have more than 1 active load balancer. That means requests come into both load balancers, and both load balancers actively redirect traffic to the appropriate downstream application servers.
 
-**Pros:**
+**Pros**
 
 - Higher throughput since requests can be split across the two load balancers.
 - Fault tolerance since we essentially have replicas of our load balancers.
 
-**Cons:**
+**Cons**
 
 - Might make local state maintained on the load balancer (like keeping track of average response time per server) a bit more complicated.
 - Complexity in configuration.

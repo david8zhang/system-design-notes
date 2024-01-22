@@ -1,5 +1,7 @@
 # Networking
 
+In this section we'll take a look at some key concepts around computer networking, such as the protocols and mechanisms for transferring data between systems over a network or communicating between client and server.
+
 ## OSI Model
 
 The OSI model is a logical and conceptual framework that divides network communications functions into seven layers. If you've ever heard the terms "L7" or "L4" with regards to networking, this is what that's referring to.
@@ -62,9 +64,9 @@ Long Polling, on the other hand, keeps the requests open until new data is avail
 
 ## Websockets
 
-**WebSocket** is a communications protocol which provides persistent two-way communication between client and server. It's implemented over a single TCP connection.
+**WebSocket** is a communications protocol which provides persistent two-way communication between client and server. It's implemented over a single TCP connection, utilizes a special handshake incorporating the _HTTP Upgrade Header_ to change from the HTTP protocol to WebSocket protocol, and has its own custom URI scheme: (`ws://` for WebSocket) and (`wss://` for Websocket Secure).
 
-Since it's _persistent_, we avoid the overhead of creating new connections. However, if these connections are largely inactive, we might waste resources. In addition, if a connection goes down, the client will need to manually re-establish it.
+Since it's _persistent_, we avoid the overhead of creating new connections and dealing with request headers. However, if these connections are largely inactive, we might waste resources. In addition, if a connection goes down, the client will need to manually re-establish it.
 
 ## Server-Sent Events
 
