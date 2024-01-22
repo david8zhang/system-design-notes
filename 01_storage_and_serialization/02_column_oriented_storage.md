@@ -8,14 +8,25 @@ _Row-oriented storage_ has data for a single row stored together, which is basic
 | Bob     | bob@email.com     | Amazon   |
 | Charlie | charlie@email.com | Facebook |
 
-_Column oriented storage_ stores a bunch of column values together. So rather than having the Name, Email, and Company all in the same file, we split out each column into its own file and just store the value of that column for each row. For example we'd have a **companies.txt** (and so on for the other columns):
+_Column oriented storage_ stores a bunch of column values together. So rather than having the Name, Email, and Company all in the same file, we split out each column into its own file and just store the value of that column for each row. For example we'd have a **companies.txt**, **emails.txt**, and **names.txt**:
 
 | Company  |
 | -------- |
 | Google   |
 | Amazon   |
 | Facebook |
-| ...      |
+
+| Email             |
+| ----------------- |
+| alice@email.com   |
+| bob@email.com     |
+| charlie@email.com |
+
+| Name    |
+| ------- |
+| Alice   |
+| Bob     |
+| Charlie |
 
 Using column oriented storage gives us several advantages:
 
