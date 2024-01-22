@@ -15,18 +15,9 @@ _Column oriented storage_ stores a bunch of column values together. So rather th
 | Google   |
 | Amazon   |
 | Facebook |
+| ...      |
 
-| Email             |
-| ----------------- |
-| alice@email.com   |
-| bob@email.com     |
-| charlie@email.com |
-
-| Name    |
-| ------- |
-| Alice   |
-| Bob     |
-| Charlie |
+(You can extrapolate the above to apply to emails and names as well)
 
 Using column oriented storage gives us several advantages:
 
