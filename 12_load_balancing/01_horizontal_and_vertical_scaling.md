@@ -1,4 +1,4 @@
-## Horizontal vs. Vertical Scaling
+# Horizontal vs. Vertical Scaling
 
 First, let's look at the different ways we can scale a system
 

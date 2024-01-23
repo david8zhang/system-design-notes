@@ -1,4 +1,4 @@
-## Server-Sent Events
+# Server-Sent Events
 
 **Server-Sent Events** provide a persistent, unidirectional communication channel that reconnects automatically.
 
