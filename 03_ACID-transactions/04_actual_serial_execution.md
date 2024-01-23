@@ -4,7 +4,7 @@ Actual Serial Execution forgoes concurrent transactions entirely. Instead, we ju
 
 - Writing everything in memory instead of on disk, enabling us to use things like hash and self-balancing tree indexes. This means we can’t store as much data
 - Use stored procedures - save SQL functions in the database and only accept the parameters of the function to cut down on the amount of data sent over the network
-  - Stored procedures are somewhat of an antipattern in the real world nowadays
+  - Stored procedures are somewhat of an antipattern in the real world nowadays since they can lead to inflexible and hard-to-maintain code
 
 ### Actual Serial Execution in the Wild
 

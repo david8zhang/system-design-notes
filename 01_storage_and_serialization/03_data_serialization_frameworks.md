@@ -2,10 +2,6 @@
 
 When we're working with data in memory, we use data structures like lists, arrays, and hashtables, which are optimized for efficient access and manipulation by the CPU using pointers. However, when we send data over the network, we need some kind of encoding format since CPU pointers won't make sense across processes or systems.
 
-**Relational data (SQL)**
-
-Relational data is the classic tabular format for data, which, as the name implies, is nice for representing relations between data types. Some drawbacks include lack of data locality if we’re performing joins across tables
-
 **JSON, XML Data**
 
 JSON and XML are plain text, human-readable formats that are good for data locality due to denormalization. They aren't necessarily the most space-efficient due to repeated string keys/duplicated data and they also don't have type safety guarantees
