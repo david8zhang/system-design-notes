@@ -6,4 +6,4 @@ Similar to Long Polling, communication is unidrectional from server to client. B
 
 Automatic connection re-establishment is a convenient feature, however it might not necessarily be good. The **thundering herd problem** could occurr if the server goes down. When it comes back online it will try to re-establish connections with all the clients _at once_, causing a huge strain and potentially knocking it out again
 
-A way to mitigate this is to use some random jitter similar to the leader candidate proposal process in the Raft distributed consensus algorithm.
+A way to mitigate this is to use some random jitter similar to the leader candidate proposal process in the [Raft distributed consensus algorithm](/topic/06_consistency_and_consensus?subtopic=03_distributed_consensus).

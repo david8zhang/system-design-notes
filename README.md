@@ -7,4 +7,6 @@ These are all the notes I've taken while studying for system design interivews. 
 - [ByteByteGo's System Design Fundamentals Youtube Channel](https://www.youtube.com/watch?v=lX4CrbXMsNQ&list=PLCRMIe5FDPsd0gVs500xeOewfySTsmEjf)
 - Donne Martin's [System Design Primer](https://github.com/donnemartin/system-design-primer) on Github
 
-I'm currently working on turning these notes into an interactive study tool called **System Design Daily**. You can check that out [here](https://software-system-quiz.vercel.app/)
+But I also reference other resources and articles as well, which I link in an "Additional Reading" section at the end of each topic module.
+
+I'm currently working on turning these notes into an interactive study tool called **System Design Daily**. You can check that out [here](https://systemdesigndaily.com)
