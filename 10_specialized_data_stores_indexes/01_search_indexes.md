@@ -16,9 +16,9 @@ A suffix inverted index is essentially the same as prefix-inverted indexes, exce
 
 **Apache Lucene** is a popular open source search engine that supports complex text searches, Levenshtein distance, numerical searches, etc.
 
-### ElasticSearch
+### Elasticsearch
 
-ElasticSearch is a convenience wrapper on top of Apache Lucene to allow for searching in a distributed system. It also provides some nice features out of the box:
+Elasticsearch is a convenience wrapper on top of Apache Lucene to allow for searching in a distributed system. It also provides some nice features out of the box:
 
 - REST API
 - Query language

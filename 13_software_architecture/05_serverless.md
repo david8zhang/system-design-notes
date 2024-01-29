@@ -4,10 +4,11 @@ Serverless computing is a method of providing compute resources on an as-used ba
 
 The term serverless is somewhat of a misnomer, as servers are still being used behind the scenes. The main selling point is that the actual configuration and provisioning of those servers is entirely handled by the vendor, effectively hiding them from the developer.
 
-Some examples of serverless providers are:
+Some examples of serverless providers (other than AWS Lambda) are:
 
-- [AWS Lambda](https://aws.amazon.com/pm/lambda)
 - [Google Cloud Functions](https://cloud.google.com/functions#key-features)
+- [Microsoft Azure Serverless](https://azure.microsoft.com/en-us/solutions/serverless)
+- [Serverless Framework](https://www.serverless.com/)
 
 ## Advantages & Disadvantages
 
@@ -23,4 +24,4 @@ However, it has some downsides:
   - There are some ways of mitigating this, such as a minimum allocation setting to keep functions "warm"
 - **Costly for multi-step workflows or long-running processes**: Long running processes with consistent load are typically better off using traditional servers. Reserved hardware is typically much more cost effective in these scenarios.
 
-  Furthermore, multi-step workflows can be extremely inefficient and expensive. A famous example is when [Amazon Prime Video cut costs by 90%](https://www.primevideotech.com/video-streaming/scaling-up-the-prime-video-audio-video-monitoring-service-and-reducing-costs-by-90) in 2023 after switching from a serverless architecture to a monolithic one for their machine-learning based audio corruption detection workflow.
+  Furthermore, multi-step workflows can be extremely inefficient and expensive. A famous example is when [Amazon Prime Video cut costs by 90%](https://www.primevideotech.com/video-streaming/scaling-up-the-prime-video-audio-video-monitoring-service-and-reducing-costs-by-90) in 2023 after switching from a serverless architecture to a monolithic one for their video-quality inspection workflow.
