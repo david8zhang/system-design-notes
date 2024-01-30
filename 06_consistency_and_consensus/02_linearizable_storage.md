@@ -38,7 +38,7 @@ Unfortunately, we could still end up READING old data if replication hasn’t pr
 
 CAP Theorem states that it's impossible for a distributed system to provide all three of the following:
 
-- **Consistency**: The same response is given to all identical requests. This is synonymous with _linearizability_, in which we provide a consistent ordering of writes such that all client will read data in the same order regardless of which partition they're reading from. (Cruciallly it's NOT the same thing as Consistency in [ACID](/topic/03_ACID-transactions))
+- **Consistency**: The same response is given to all identical requests. This is synonymous with _linearizability_, in which we provide a consistent ordering of writes such that all clients read data in the same order regardless of which replica they're reading from. (Cruciallly it's NOT the same thing as Consistency in [ACID](/topic/03_ACID-transactions))
 - **Availability**: The system is still accessible during partial failures
 - **Partition Tolerance**: Operations remain intact when nodes are unavailable.
 
