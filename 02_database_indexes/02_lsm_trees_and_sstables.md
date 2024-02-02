@@ -13,6 +13,10 @@ Every time we do this SSTable serialization, we create a brand new SSTable which
 - This means that reading might be slow since we’d need to scan every SSTable if the key doesn’t exist in our current LSM Tree
 - However, we can merge SSTables together in a background process called SSTable compaction (a process similar to the "merge" operation in the mergesort algorithm) reducing the number of SSTables we need to search through.
 
+Here's an example for how this process works:
+
+![LSM Tree, Compaction](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/02_lsm_tree_sstable.png?alt=media&token=37508996-3f57-4acc-a7a6-92a47fb6752c)
+
 ## Write-Ahead Logs
 
 A write-ahead log (WAL) is just a log of all the write operations we are doing whenever we insert keys into the tree. We maintain a write-ahead log on disk to maintain the durability of the LSM tree.
