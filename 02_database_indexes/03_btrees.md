@@ -4,6 +4,8 @@ B Tree indexes are database indexes that utilize a self-balancing N-ary search t
 
 ## B Tree Properties
 
+![Example B-Tree](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/03_btrees.png?alt=media&token=66dacb97-1831-4add-b76a-3d0c2f205a55)
+
 B Trees have a special property in that each node contains a range of keys in sorted order, and there is a lower and upper bound on the number of keys and children that a node may have:
 
 - These bounds are usually determined by the size of a page on disk
