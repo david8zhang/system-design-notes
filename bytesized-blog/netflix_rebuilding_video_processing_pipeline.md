@@ -26,7 +26,7 @@ They took a look at the current video processing pipeline and broke it up into s
 
 - Complexity Analysis Service (CAS): Looks at the content itself to figure out the optimal encoding recipe for it (using some metric called "complexity"). Calls VES to do some pre-encoding and VQS on that output as well.
 
-- Ladder Generation Service (LGS): Creates the actual encoding recipe based on CAS's results. Netflix has a bunch of little tricks for optimizing this, like KFC's 11 Herbs and Spices.
+- Ladder Generation Service (LGS): Creates the actual encoding recipe based on CAS's results. Netflix has a bunch of little tricks for optimizing this.
 
 - Video Encoding Service (VES): does all the encoding stuff by breaking all the files into little chunks and encoding each one in parallel and stitching together the output
 
