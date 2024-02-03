@@ -14,13 +14,13 @@ Reloaded was initially built as a [monolith](/topic/13_software_architecture). A
 
 - **Deployment Woes**: Modules all had to be deployed together since it was one big fat repo
 
-- **Testing takes a long ass time**: All the modules had to be tested at the same time during deployments. And the testing had to be pretty rigorous so that we don't bring down prod. To make matters worse: rollbacks are super expensive if we _do_ bring it down. All this = testing takes **two weeks**.
+- **Testing takes a long ass time**: All the modules had to be tested at the same time during deployments. And the testing had to be pretty rigorous so that they don't break prod. To make matters worse: rollbacks are super expensive if we _do_ bring it down. All this = testing takes **two weeks**.
 
 They decided to build out a new platform called **Cosmos**.
 
 ## How those crazy sons of bitches did it
 
-They took a look at the current video processing pipeline broke it up into steps. Then roll out services that do each step:
+They took a look at the current video processing pipeline and broke it up into steps. Then they rolled out services that do each step:
 
 - Video Inspection Service (VIS): Takes the raw media files extracts some metadata for downstream services. Flag issues if we see some invalid or sus metadata
 
