@@ -14,7 +14,7 @@ Consider this example where we have a table of doctors with columns "name" and "
 
 We then have an invariant (rule) that at least 1 doctor needs to be active at all times. If two transactions concurrently try to set "Dr. Oz" and "Dr. Toboggan" to "INACTIVE", they'll both read that there are 2 "ACTIVE" doctors allowing each to set its respective doctor to "INACTIVE", violating the invariant.
 
-In other words, the end result of BOTH writes violate the invariant. This means row-level locking doesn’t work since the variant is applied over ALL data instead of just one row. What we need is a predicate lock over ALL rows affected by the invariant.
+In other words, the end result of BOTH writes violate the invariant. This means row-level locking doesn’t work since the invariant is applied over ALL data instead of just one row. What we need is a predicate lock over ALL rows affected by the invariant.
 
 **Phantom Writes**
 
