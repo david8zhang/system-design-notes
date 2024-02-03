@@ -14,7 +14,7 @@ Reloaded was initially built as a [monolith](/topic/13_software_architecture). A
 
 - **Deployment Woes**: Modules all had to be deployed together since it was one big fat repo
 
-- **Testing takes a long ass time**: All the modules had to be tested at the same time during deployments. And the testing had to be pretty rigorous so that they don't break prod. To make matters worse: rollbacks are super expensive if we _do_ bring it down. All this = testing takes **two weeks**.
+- **Testing takes a long ass time**: All the modules had to be tested at the same time during deployments. And the testing had to be pretty rigorous so that they don't break prod. To make matters worse: rollbacks are super expensive if they _do_ bring it down. All this = testing takes **two weeks**.
 
 They decided to build out a new platform called **Cosmos**.
 
