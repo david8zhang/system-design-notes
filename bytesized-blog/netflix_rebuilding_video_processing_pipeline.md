@@ -46,4 +46,4 @@ Next there's the studio operations use case, e.g. marketing clips, production re
 
 The whole process of building and migrating everything took 5 years. But it's paid some dividends - the extensibility of microservices allows quick iteration and deployment of new features like Ads encoding optimization (for the Ad-supported plan).
 
-So yeah the moral of the story is that if you got this big ass monolith and five spare years, maybe you 🫵 should try doing microservices, ya dingus
+So yeah the moral of the story is that if you got this big ass monolith and five spare years, maybe you 🫵 should try doing microservices
