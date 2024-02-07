@@ -16,7 +16,30 @@ The two types of locks we use are:
 
 **Deadlocks**
 
-Deadlocks occur when two writes are dependent on each other and neither can release their locks until the other does so in turn (a circular dependency). These would need to be detected by the system, and one transaction would be forced to abort
+Deadlocks occur when two writes are dependent on each other and neither can release their locks until the other does so in turn (a circular dependency). Let's imagine the following scenario:
+
+Two users each maintain a shopping cart:
+
+```
+Alice: [Apples, Oranges]
+Bob: [Milk, Eggs]
+```
+
+Let's imagine this is some kind of "social shopping" app where each user can see each other's cart. If Alice reads from Bob's cart and decides she wants to add Bob's items to her own, she will execute a transaction with the following steps.
+
+1. Grab a read lock on Bob's cart (to read his items)
+2. Grab a read lock on Alice's cart (since we need to read in her items before we can update)
+3. Grab a write lock on Alice's cart to do the update
+
+However, what if Bob also does the same thing?
+
+1. Grab a read lock on Alice's cart
+2. Grab a read lock on Bob's cart
+3. Gragb a write lock on Bob's cart to do the update
+
+Now, we have a problem. Neither Alice nor Bob can perform step 3 and grab write locks on their own carts to update them, since write locks are exclusive. So in order for Alice to grab her write lock, she will need Bob to release his read lock on her cart. But Bob can't do that until _his_ write completes.
+
+The only way forward would be for this to be detected by the system, and one transaction would be forced to abort.
 
 **Phantom writes**
 
