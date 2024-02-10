@@ -6,6 +6,8 @@ Leaderless replication forgoes designating specific nodes as leader nodes entire
 
 To guarantee that we have the most recent values whenever we read from the system, we need a **quorum**, which just means "majority"
 
+![leaderless-quorum](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/leaderless-quorums.png?alt=media&token=8f80d154-317f-44f8-8e8e-433008000f6f)
+
 Writers write to a majority of nodes so that readers can guarantee that at least one of their return values will be the most recent when they read from a majority of nodes. In mathematical terms:
 
 ```
@@ -26,9 +28,9 @@ Let's imagine a client is able to talk to _some_ database nodes during a network
 1. Return errors for all requests for which we can't reach a quorum of nodes
 2. Accept writes anyways, but write them to nodes that _are_ reachable, but which aren't necessarily the nodes that we normally write to.
 
-The 2nd option causes a _sloppy quorum_ where the _W_ and _R_ in our inequality aren't among the designated _N_ "home" nodes. For example, if replication nodes for the US region fail, we could establish a quorum using some nodes from the EU region instead.
+The 2nd option causes a _sloppy quorum_ where the _W_ and _R_ in our inequality aren't among the designated _N_ "home" nodes. Once the original home nodes come back up, we need to propagate the writes that were sent to those temporary writer nodes back to those home nodes. This process is called _hinted handoff_. Let's take a look at an example:
 
-Once the original home nodes come back up, we need to propagate the writes that were sent to those temporary writer nodes back to those home nodes. This process is called _hinted handoff_.
+![leaderless-sloppy-quorums](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/leaderless-sloppy-quorums.png?alt=media&token=1be90923-9636-46cc-9113-3919a034db74)
 
 ## Anti-Entropy
 
@@ -37,6 +39,8 @@ Another way to prevent stale reads is to propagate writes in the background betw
 One way to do this is to just send the entire replication log with all the writes from node A. But this would be inefficient since all we need is the diff (just writes 1 and 4).
 
 We can quickly obtain this diff using a **Merkle Tree**, which is a tree of hashes computed over data rows. Each individual row gets hashed to a value, and those values are combined and hashed hierarchically until we get a root hash over all the rows.
+
+![merkle-tree](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/leaderless-merkle-trees.png?alt=media&token=16a6f055-8700-48c5-9beb-772e14e643ef)
 
 Using a binary tree search, we can efficiently identify what's changed in a dataset by comparing hash values. For example, the root hash will tell us if there is any change across our entire data set, and we can examine child hashes recursively to track down which specific rows have changed.
 

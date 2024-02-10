@@ -6,9 +6,9 @@ Time series databases use hypertables to optimize reads and writes. A **hypertab
 
 |       | Sensor 1 | Sensor2 | Sensor3 |
 | ----- | -------- | ------- | ------- |
-| 1-2PM |          |         |
-| 2-3PM |          |         |
-| 3-4PM |          |         |
+| 1-2PM |          |         |         |
+| 2-3PM |          |         |         |
+| 3-4PM |          |         |         |
 
 Each cell in the table above would correspond to a chunk of data for a given sensor between a given time interval.
 

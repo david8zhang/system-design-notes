@@ -10,7 +10,7 @@ The process for establishing a connection is via a 3-way handshake:
 
 TCP tries to guarantee reliable delivery using sequence numbers to confirm message receipt. This operates similarly to the handshake, send a message with a sequence number and expect an acknowledgment with the sequence number + 1
 
-TCP also uses timeouts to retry whenever it doesn't receive an acknowledgement. For example, it sends a message with a sequence number, then wait for a set period before retrying the message. It uses a strategy called _exponential backoff_ to prevent spamming the network. Exponential backoff
+TCP also uses timeouts to retry whenever it doesn't receive an acknowledgement. For example, it sends a message with a sequence number, then waits for a set period before retrying the message. The amount of time it waits between retries increases exponentially; this is a strategy known as _exponential backoff_.
 
 ## Flow and Congestion control
 

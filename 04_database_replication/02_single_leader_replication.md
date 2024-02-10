@@ -4,6 +4,8 @@ In a single leader replication (sometimes referred to as Master-Slave or Active-
 
 This guarantees that we won’t have any write conflicts since all writes are processed by only one node. However, this also means we have a single point of failure (the leader) and slower write throughput since all writes can only go through a single node.
 
+![single-leader-replication](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/single-leader-replication.png?alt=media&token=0cabadaf-f9eb-4453-b07b-0a09d74457b3)
+
 ## Possible Failure Scenarios
 
 In single leader replication, follower failures are pretty easy to recover from since the leader can just update the follower after it comes back online. Specifically, the leader can see what the follower’s last write was prior to failure in the replication log and backfill accordingly.
