@@ -30,7 +30,9 @@ Version vectors take O(N) space where N is the number of replicas, so it might n
 
 A Lamport clock is a counter stored across every replica node which gets incremented on every write, both on the client AND the database.
 
-Whenever we read the counter value on the client side, we write back the max of the database counter and the client counter alongside the write. This value overrides the one on both the client and server, guaranteeing that all writes following this one will have a higher counter value. When sorting writes, we sort by the counter. If they’re the same, we can sort by node number.
+Whenever we read the counter value on the client side, we write back the max of the database counter and the client counter alongside the write. This value overrides the one on both the client and server, guaranteeing that all writes following this one will have a higher counter value. When sorting writes, we sort by the counter. If they’re the same, we can sort by node number. Let's see an example of how this might work:
+
+![lamport-clock-example](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/lamport-clocks.png?alt=media&token=bc01dcd0-4f3a-4e66-a41d-b6d3cdb7b43d)
 
 Unfortunately, we could still end up READING old data if replication hasn’t propagated through the system, so this isn’t actually linearizable storage. We only get ordering of writes after the fact.
 
