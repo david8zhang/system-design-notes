@@ -15,7 +15,7 @@ Every time we do this SSTable serialization, we create a brand new SSTable which
 
 Here's an example for how this process works:
 
-![LSM Tree, Compaction](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/02_lsm_tree_sstable.png?alt=media&token=38c24cee-13e6-4c40-bb94-2474d849acfb)
+![LSM Tree, Compaction](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/02_lsm_tree_sstable.png?alt=media&token=1c10720c-825a-4bf1-ba84-a725ef1f0c0e)
 
 ## Write-Ahead Logs
 

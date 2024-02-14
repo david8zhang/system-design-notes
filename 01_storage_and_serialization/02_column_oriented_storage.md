@@ -68,7 +68,7 @@ Performing column compression enables us to:
 - Send less data over the network
 - Potentially keep more data stored in memory or CPU cache if the dataset is small enough
 
-## Downisides to column oriented storage
+## Downsides to column oriented storage
 
 There are a few downsides to column oriented storage:
 
