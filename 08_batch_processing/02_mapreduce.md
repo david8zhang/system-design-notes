@@ -21,6 +21,10 @@ Every data node will have a bunch of unformatted data stored on disk. The MapRed
 - Reduce the key-value pairs. We'll have a bunch of key-value pairs at this point that have the same key. We want to take all those and reduce it to just a single key-value pair for each key.
 - Materialize the reduced data to disk
 
+Here's a diagram of what that process might look like:
+
+![mapreduce-flow](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/mapreduce-flow.png?alt=media&token=668d47ef-b5e3-4ca1-b63f-8ca58df22223)
+
 **Why do we sort our keys?**
 
 During our reduce operation, if we have a sorted list of keys, we know that once we've seen the last key in the list, we can just flush the result to disk. Otherwise, we would have to store the intermediate result in memory in case we see another tuple for that key.

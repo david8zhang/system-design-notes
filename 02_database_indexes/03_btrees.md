@@ -4,7 +4,7 @@ B Tree indexes are database indexes that utilize a self-balancing N-ary search t
 
 ## B Tree Properties
 
-![Example B-Tree](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/03_btrees.png?alt=media&token=66dacb97-1831-4add-b76a-3d0c2f205a55)
+![Example B-Tree](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/03_btrees.png?alt=media&token=447ef3ab-8dae-4369-8a7b-e4c751da83b5)
 
 B Trees have a special property in that each node contains a range of keys in sorted order, and there is a lower and upper bound on the number of keys and children that a node may have:
 
@@ -19,6 +19,8 @@ B+ Trees are similar to B Trees, except:
 
 - Whereas B Trees can store data at the interior node level, B+ Trees only store data at the leaf node level
 - Leaf nodes are linked together (every leaf node has a reference to the next leaf node sequentially).
+
+![Example B+ Tree](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/03_bplus_tree.png?alt=media&token=8d33e811-c2c7-4ed4-a191-3c2f18f5c7a2)
 
 The key advantage offered by this setup is that a full scan of all objects in a tree requires just one linear pass through all leaf nodes, as opposed to having to do a full tree traversal. The disadvantage is that since only leaf nodes contain data, accessing data might take longer since you have to go deeper in the tree
 
