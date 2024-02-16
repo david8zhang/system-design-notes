@@ -20,6 +20,6 @@ Kibana is an analytics and visualization platform which serves as the view layer
 
 ## From ELK to Elastic Stack
 
-Today, the ELK Stack has evolved to incorporate two new components (X-Pack and Beats) and is now more commonly referred to as the "Elastic stack". X-Pack is a pack of features which provide additional functionality on top of ElasticSearch, such as graph visualizations and machine learning based anomaly detection. Beats is a event publishing agent that can be installed on your microservice hosts to standardize how you publish your log files (FileBeat) and metrics (MetricBeat).
+Today, the ELK Stack has evolved to incorporate two new components (X-Pack and Beats) and is now more commonly referred to as the "Elastic stack". X-Pack is a pack of features which provide additional functionality on top of ElasticSearch, such as graph visualizations and machine learning based anomaly detection. Beats is an event publishing agent that can be installed on your microservice hosts to standardize how you publish your log files (FileBeat) and metrics (MetricBeat).
 
 **Note:** The ELK stack started off as a fully open source project, but has recently become a proprietary, managed offering provided by the Elastic NV company after transitioning from the Apache License v2 to the dual Server Side Public License and Elastic License. AWS provides alternatives to Elasticsearch and Kibana under the old Apache License in the form of OpenSearch and OpenSearch Dashboards.

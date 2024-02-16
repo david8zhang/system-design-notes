@@ -4,7 +4,7 @@
 
 A **Monolithic architecture** is a singular system with one code base that couples all business concerns together. These are convenient early on in a project's life since they're easy to understand and manage. Testing and debugging is streamlined since we just have a single codebase or service, and we don't need to coordinate business logic across multiple endpoints which might give us some nice performance benefits.
 
-However as a system grows, some major problems begin to arise: For one thing, we have a single point of failure so our system is less reliable. We also can't scale up individual parts of our system independently, or use different technologies for each part since its one giant codebase. Finally, making changes requires updating and deploying the entire system, which can be slow and inefficient.
+However as a system grows, some major problems begin to arise: For one thing, we have a single point of failure so our system is less reliable. We also can't scale up individual parts of our system independently, or use different technologies for each part since it's one giant codebase. Finally, making changes requires updating and deploying the entire system, which can be slow and inefficient.
 
 ## Microservices
 
