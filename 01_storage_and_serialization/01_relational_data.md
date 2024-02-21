@@ -30,9 +30,19 @@ A company offices table could be the result of joining the two tables, which tel
 
 Relational data is sometimes referred to as "normalized" data. A **relational database** is a type of database that stores this data, and typically uses SQL (Structured Query Langage) for querying and updating.
 
-## Disadvantages of Relational Data
+### Structured Query Language
+
+As mentioned before, SQL is a programming language for storing and processing information in a relational database. It's declarative, meaning we specify the expected result and core logic without directing the program's control flow. Imperative, on the other hand, directs the control flow of the program. In other words, in declarative programming "you say what you want", whereas in imperative programming you "say how to get what you want".
+
+Declarative languages are good for database operations because they abstract away the underlying database implementation, enabling the system to make performance improvements without breaking queries. Furthermore, declarative languages lend themselves well to parallel execution, since they only specify the pattern of results and not the method used to determine them. Unlike with imperative code, the order of operations doesn't matter.
+
+In practice, SQL statements can be executed in a specific way to maximize cache hits and ensure good performance. Many database systems have query optimizers which do these reorderings automatically behind the scenes.
+
+### Disadvantages of Relational Data
 
 Relational database tables in a single node might not be stored near each other on disk (poor data _locality_). That means trying to do the join across two tables could be slow due to random I/O on disk. In a distributed system, these tables might not even live on the same database node due to _partitioning_ (which we'll get into later). This would require us to make multiple network requests to different places, among other problems related to data consistency.
+
+Another issue that arises with relational data stems from the fact that many programming languages are object-oriented, meaning applications interact with data classes and objects. Relational data, with tables and rows, might not necessarily translate well - this issue is called _Object-relational Impedance Mismatch_. The most common way to mitigate this is through the use of Object-Relational Mappers (ORMs), which do exactly as their name implies - they translate objects to relational data and vice versa.
 
 ## Non-Relational Data
 

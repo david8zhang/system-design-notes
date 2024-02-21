@@ -47,7 +47,7 @@ In this case, we don't need to sort our large dataset at all, saving a lot of ti
 
 **Partition Hash Join**
 
-But what if neither dataset is small enough to fit in memory? That's where the **partition hash join** comes in - we can just _partition_ the our datasets into smaller datasets so that they _do_ fit in memory. From there, we can just do a normal hash join.
+But what if neither dataset is small enough to fit in memory? That's where the **partition hash join** comes in - we can just _partition_ the datasets into smaller datasets so that they _do_ fit in memory. From there, we can just do a normal hash join.
 
 It's important here that we partition both our datasets the same way so that the keys in each partition correspond to each other and go to the same node.
 
