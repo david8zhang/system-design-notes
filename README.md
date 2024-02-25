@@ -1,5 +1,3 @@
-<meta name="google-site-verification" content="GBCPEM6p0IarruRZ2_Pu_sz_QCvsjaQL87hWnv7zcj0" />
-
 # System Design Notes
 
 These are all the notes I've taken while studying for system design interivews. The top resources I've used are:
