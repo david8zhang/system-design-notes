@@ -2,7 +2,7 @@
 
 Instead of having many long lived connections between producers and consumers to handle event propagation, we have a _message broker_, which takes on the responsibility of ingesting events from producers and pushing them to consumers. The typical underlying implementation of these are queues.
 
-![message-brokers](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/message-brokers.png?alt=media&token=58601c16-46e4-4101-bb40-980f720df3e9)
+![message-brokers](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/message-brokers.png?alt=media&token=01e1e11d-1af5-424f-924e-4e9b02fcda20)
 
 There are two types of message brokers: in-memory message brokers, and log-based message brokers
 

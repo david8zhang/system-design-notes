@@ -49,9 +49,19 @@ A company offices table could be the result of joining the two tables, which tel
 
 Relational data is sometimes referred to as "normalized" data. A **relational database** is a type of database that stores this data, and typically uses SQL (Structured Query Langage) for querying and updating.
 
-### Disadvantages of Relational Data
+#### Structured Query Language
+
+As mentioned before, SQL is a programming language for storing and processing information in a relational database. It's declarative, meaning we specify the expected result and core logic without directing the program's control flow. Imperative, on the other hand, directs the control flow of the program. In other words, in declarative programming "you say what you want", whereas in imperative programming you "say how to get what you want".
+
+Declarative languages are good for database operations because they abstract away the underlying database implementation, enabling the system to make performance improvements without breaking queries. Furthermore, declarative languages lend themselves well to parallel execution, since they only specify the pattern of results and not the method used to determine them. Unlike with imperative code, the order of operations doesn't matter.
+
+In practice, SQL statements can be executed in a specific way to maximize cache hits and ensure good performance. Many database systems have query optimizers which do these reorderings automatically behind the scenes.
+
+#### Disadvantages of Relational Data
 
 Relational database tables in a single node might not be stored near each other on disk (poor data _locality_). That means trying to do the join across two tables could be slow due to random I/O on disk. In a distributed system, these tables might not even live on the same database node due to _partitioning_ (which we'll get into later). This would require us to make multiple network requests to different places, among other problems related to data consistency.
+
+Another issue that arises with relational data stems from the fact that many programming languages are object-oriented, meaning applications interact with data classes and objects. Relational data, with tables and rows, might not necessarily translate well - this issue is called _Object-relational Impedance Mismatch_. The most common way to mitigate this is through the use of Object-Relational Mappers (ORMs), which do exactly as their name implies - they translate objects to relational data and vice versa.
 
 ### Non-Relational Data
 
@@ -143,7 +153,7 @@ Performing column compression enables us to:
 - Send less data over the network
 - Potentially keep more data stored in memory or CPU cache if the dataset is small enough
 
-### Downisides to column oriented storage
+### Downsides to column oriented storage
 
 There are a few downsides to column oriented storage:
 
@@ -330,9 +340,11 @@ A database index is a data structure that allows you to efficiently search for s
 
 ## Hash Index
 
-In a hash index, we pass each database key into a hash function and store the key at a memory address corresponding to the hash. This gives us extremely optimized reads and writes, as hash tables provide constant time lookup and storage.
+In a hash index, we pass each database key into a hash function and store the value at a memory address corresponding to the hash. This gives us extremely optimized reads and writes, as hash tables provide constant time lookup and storage
 
-However, hash indexes are limited to small datasets since the hash of the key might not fit within the memory address space.
+![Example of a hash index](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/01_hash_indexes.png?alt=media&token=f2c44559-f222-4746-b0ae-c5fccffad810)
+
+However, hash indexes are limited to small datasets since the hash of the key might not fit within the memory address space. Though you could implement a hash index on disk, it's not efficient to perform random I/O. Furthermore, they're not particularly good for range queries, since the keys aren't sorted. Grabbing all values across "A" and "B", for example, would require us to either check every possible key (which is infeasible), or iterate through all of the keys in our hashmap (which is slow).
 
 ### Hash Indexes in the Wild
 
@@ -352,6 +364,10 @@ Every time we do this SSTable serialization, we create a brand new SSTable which
 
 - This means that reading might be slow since we’d need to scan every SSTable if the key doesn’t exist in our current LSM Tree
 - However, we can merge SSTables together in a background process called SSTable compaction (a process similar to the "merge" operation in the mergesort algorithm) reducing the number of SSTables we need to search through.
+
+Here's an example for how this process works:
+
+![LSM Tree, Compaction](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/02_lsm_tree_sstable.png?alt=media&token=1c10720c-825a-4bf1-ba84-a725ef1f0c0e)
 
 ### Write-Ahead Logs
 
@@ -376,6 +392,8 @@ B Tree indexes are database indexes that utilize a self-balancing N-ary search t
 
 ### B Tree Properties
 
+![Example B-Tree](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/03_btrees.png?alt=media&token=447ef3ab-8dae-4369-8a7b-e4c751da83b5)
+
 B Trees have a special property in that each node contains a range of keys in sorted order, and there is a lower and upper bound on the number of keys and children that a node may have:
 
 - These bounds are usually determined by the size of a page on disk
@@ -389,6 +407,8 @@ B+ Trees are similar to B Trees, except:
 
 - Whereas B Trees can store data at the interior node level, B+ Trees only store data at the leaf node level
 - Leaf nodes are linked together (every leaf node has a reference to the next leaf node sequentially).
+
+![Example B+ Tree](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/03_bplus_tree.png?alt=media&token=8d33e811-c2c7-4ed4-a191-3c2f18f5c7a2)
 
 The key advantage offered by this setup is that a full scan of all objects in a tree requires just one linear pass through all leaf nodes, as opposed to having to do a full tree traversal. The disadvantage is that since only leaf nodes contain data, accessing data might take longer since you have to go deeper in the tree
 
@@ -432,13 +452,58 @@ Read committed isolation is the idea that a database query only sees data commit
   - Solution is row-level locking - if I’m writing to this row, it’s locked and you can’t do anything to it until I release that lock
 - **Dirty read:** Reading uncommitted data: data is modified by a pending write, which causes inconsistency when reading (for example in the event that the write fails)
 
-In practice, Read Committed isolation can be enforced as an isolation level setting for all transactions processed by your DBMS.
+In practice, Read Committed isolation can be enforced as an isolation level setting for all transactions processed by your DBMS. It provides an _intermediate level_ of isolation when compared to other isolation levels:
+
+- **Read Uncommitted (Low)**: Allows reading uncommitted data (dirty reads)
+- **Read Committed (Intermediate)**: Allows only reading of committed data. However, reading a value twice may result in different values (non-repeatable)
+- **Read Repeatable (High)**: Allows only reading of commited data and only by a single transaction at a time using exclusive read locks.
+- **Serializable (Highest)**: Serializable execution pretty much guantees that transactions appear to be executing in serial order and, by definition, provide the highest isolation level
 
 ## Snapshot Isolation
 
-Snapshot isolation is a guarantee that all transactions will see a consistent _snapshot_, or state, of the database and will only successfully commit if no updates it has made conflict with any concurrent updates made since that snapshot.
+### Read Skew
 
-Snapshots similar to a write-ahead log, in that they display the last committed values in a database for a given point in time.
+Consider the following example. We have the following list doctors and patients:
+
+```
+Dr. Toboggan: 2
+Dr. Phil: 3
+Dr. Oz: 2
+Dr. Doom: 1
+Dr. Patel: 2
+```
+
+Let's assume we have a query that just goes down the list one at a time. We have an invariant over the table that there are a total of 10 patients at ALL times.
+
+However, let's now assume that before we begin reading Dr. Oz, one patient transfers from Dr. Oz to Dr. Toboggan.
+
+So now, we have the following:
+
+```
+Dr. Toboggan: 2 (now updated to 3)
+Dr. Phil: 3
+Dr. Oz: 1 < READ
+Dr. Doom: 1
+Dr. Patel: 2
+```
+
+But now there's a problem. We've _already_ read that Dr. Toboggan only had 2 patients. However, due to this write happening in the middle of our read, we now see that a patient has gone missing. This state, in which our read is over an inconsistent state of the database, is called **read skew**.
+
+### Snapshots
+
+Snapshot isolation is a guarantee that all transactions will see a consistent _snapshot_, or state, of the database. This addresses the example that we saw above.
+
+Snapshot isolation also guarantees that a write will only successfully commit if it does not conflict with any concurrent updates made since that snapshot.
+
+Snapshots similar to a write-ahead log, in that they display the last committed values in a database for a given point in time. So in our example above, our read query (let's assume it occurs at time T1) would see a snapshot of the database prior to the write, when the patient was transferered.
+
+```
+[T1] Dr. Toboggan: 2
+[T1] Dr. Phil: 3
+[T1] Dr. Oz: 2
+[T1] Dr. Doom: 1
+[T1] Dr. Patel: 2
+```
 
 Every time we complete a transaction, we store the resulting value for a given key alongside a timestamp. We hold on to previous values for a given key so that at any given time we can see what the last written value was.
 
@@ -458,13 +523,35 @@ Consider this example where we have a table of doctors with columns "name" and "
 
 We then have an invariant (rule) that at least 1 doctor needs to be active at all times. If two transactions concurrently try to set "Dr. Oz" and "Dr. Toboggan" to "INACTIVE", they'll both read that there are 2 "ACTIVE" doctors allowing each to set its respective doctor to "INACTIVE", violating the invariant.
 
-In other words, the end result of BOTH writes violate the invariant. This means row-level locking doesn’t work since the variant is applied over ALL data instead of just one row. What we need is a predicate lock over ALL rows affected by the invariant.
+In other words, the end result of BOTH writes violate the invariant. This means row-level locking doesn’t work since the invariant is applied over ALL data instead of just one row. What we need is a predicate lock over ALL rows affected by the invariant.
 
 **Phantom Writes**
 
-When two concurrent writes try to both add the same new row. No locks can be grabbed since the row doesn’t even exist yet, resulting in duplicate rows being added to the table.
+A phantom write can occur when two concurrent writes try to both add the same new row. No locks can be grabbed since the row doesn’t even exist yet, resulting in duplicate rows being added to the table.
 
-One way to mitigate this is to pre-populate the database with all rows that could potentially exist.
+For example, imagine we have a meeting room booking application, where rooms can be booked from 11AM to 2PM for 1 hour time slots. Users add a new entry whenever they book a room for a time slot:
+
+| Room   | Time Slot   |
+| ------ | ----------- |
+| Room 1 | 1PM - 2PM   |
+| Room 2 | 11AM - 12PM |
+
+Now if two people try to book Room 2 for 1PM to 2PM at the same time, for example, they could potentially _both_ add duplicate rows to the table. That would not be good.
+
+One way to mitigate this is to pre-populate the database with all rows that could potentially exist. This approach is known as "materializing conflicts". For example:
+
+| Room   | Time Slot   | Status   |
+| ------ | ----------- | -------- |
+| Room 1 | 11AM - 12PM | RESERVED |
+| Room 1 | 12PM - 1PM  | RESERVED |
+| Room 1 | 1PM - 2PM   | FREE     |
+| Room 2 | 11AM - 12PM | FREE     |
+| Room 2 | 12PM - 1PM  | RESERVED |
+| Room 2 | 1PM - 2PM   | RESERVED |
+
+Now we can use row level locking to ensure only one user is able to book the room for a given time slot!
+
+Of course, this approach isn't feasible for all use-cases. Some storage engines like InnoDB provide ["next-key locking" to check for duplicate rows](https://dev.mysql.com/doc/refman/8.0/en/innodb-next-key-locking.html). However, if your storage engine doesn't allow this, you may have to enforce serializable isolation, preventing concurrent transactions from occurring altogether.
 
 ## Actual Serial Execution
 
@@ -500,7 +587,30 @@ The two types of locks we use are:
 
 **Deadlocks**
 
-Deadlocks occur when two writes are dependent on each other and neither can release their locks until the other does so in turn (a circular dependency). These would need to be detected by the system, and one transaction would be forced to abort
+Deadlocks occur when two writes are dependent on each other and neither can release their locks until the other does so in turn (a circular dependency). Let's imagine the following scenario:
+
+Two users each maintain a shopping cart:
+
+```
+Alice: [Apples, Oranges]
+Bob: [Milk, Eggs]
+```
+
+Let's imagine this is some kind of "social shopping" app where each user can see each other's cart. If Alice reads from Bob's cart and decides she wants to add Bob's items to her own, she will execute a transaction with the following steps.
+
+1. Grab a read lock on Bob's cart (to read his items)
+2. Grab a read lock on Alice's cart (since we need to read in her items before we can update)
+3. Grab a write lock on Alice's cart to do the update
+
+However, what if Bob also does the same thing?
+
+1. Grab a read lock on Alice's cart
+2. Grab a read lock on Bob's cart
+3. Gragb a write lock on Bob's cart to do the update
+
+Now, we have a problem. Neither Alice nor Bob can perform step 3 and grab write locks on their own carts to update them, since write locks are exclusive. So in order for Alice to grab her write lock, she will need Bob to release his read lock on her cart. But Bob can't do that until _his_ write completes.
+
+The only way forward would be for this to be detected by the system, and one transaction would be forced to abort.
 
 **Phantom writes**
 
@@ -591,14 +701,20 @@ There are two types of replication:
 
 Eventual consistency allows us to reap the performance benefit of not having to wait for writes to completely propagate through our system before we can do anything else. However, there are some issues.
 
-One such case is if a user makes a write, but reads the updated value before the write is propagated to the replica that they're reading from, they might read stale data and think the application is broken or slow. One way to mitigate this is to **read your own writes**:
+One such case is if a user makes a write, but reads the updated value before the write is propagated to the replica that they're reading from, they might read stale data and think the application is broken or slow.
+
+![stale-read](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/stale-read-eventual-consistency.png?alt=media&token=1fba4669-e342-4f21-b065-ab405d60fd0d)
+
+One way to mitigate this is to **read your own writes**:
 
 - Whenever you write to a database replica, read from the same replica for some X time.
 - Set X based on how long it takes to propagate that write to other replicas so that once X has passed, we can lift the restriction.
 
-Another issue we could run into is if we read from replicas that are progressively less updated, resulting in reading data "out of order".
+![read-your-own-writes](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/read-your-own-writes.png?alt=media&token=e78195e9-4b41-463e-b2d2-9a5596626371)
 
-For example, let's say we're trying to get the latest event that occurred in an event log, and events 1, 2, and 3 occur in that order. The ordering of those events isn't guaranteed to be preserved while propagating across replica nodes. We could read from a replica that's seen all 3 events, but then read from another replica that's only seen the first 2. The result is we display event 2 as being later than event 3, which is incorrect.
+Another issue we could run into is if we read from replicas that are progressively less updated, resulting in reading data "out of order". Let's look at an example:
+
+![out-of-order](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/out-of-order-reads.png?alt=media&token=1c00a0c1-83c7-4026-9e32-1c5d5d11742b)
 
 A possible solution for this is to have each user always read data from the same replica. This guarantees that our reads are **monotonic reads** - we might still read stale data from the same replica, but at least it will be in the correct order.
 
@@ -607,6 +723,8 @@ A possible solution for this is to have each user always read data from the same
 In a single leader replication (sometimes referred to as Master-Slave or Active-Passive), we designate a specific replica node in the database cluster as a leader and write to that node only, having it manage the responsibility of propagating writes to other nodes.
 
 This guarantees that we won’t have any write conflicts since all writes are processed by only one node. However, this also means we have a single point of failure (the leader) and slower write throughput since all writes can only go through a single node.
+
+![single-leader-replication](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/single-leader-replication.png?alt=media&token=0cabadaf-f9eb-4453-b07b-0a09d74457b3)
 
 ### Possible Failure Scenarios
 
@@ -637,17 +755,23 @@ There are a few topologies for organizing our write propagation flow between lea
 
 As the name suggests, leader nodes are arranged in a circular fashion, with each leader node passing writes to the next leader node in the circle
 
+![circle-topology](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/multi-leader-circle.png?alt=media&token=78ac3e44-a87f-44a7-bd8d-6af0bdb8f56c)
+
 If a single node in the circle fails, the previous node in the circle that was passing writes no longer knows what to do. Hence, fault tolerance is non-existent in this topology
 
 #### Star Topology
 
 In a star topology, we designate a central leader node, which outer nodes pass their writes to. The central node then propagates these writes to the other nodes
 
+![star-topology](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/multi-leader-star.png?alt=media&token=e3e4aa81-e50d-4c03-9d31-8bd923404e86)
+
 If the outer nodes die, we're fine since the central node can continue to communicate with the other remaining outer nodes, so it's a little bit more fault tolerant than the Circle Topology. But if the central leader node dies, then we're screwed
 
 #### All-to-all Topology
 
 An all-to-all topology is a "complete graph" structure where every node propagates writes to every other node in the system (every node is the "central" node from the Star Topology)
+
+![all-to-all-topology](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/multi-leader-all-to-all.png?alt=media&token=8fe6e9c8-39dc-4419-9596-707ca70707d2)
 
 This is even more fault tolerant than the star topology since now if any node dies, the rest of the nodes can still communicate with each other. However, there are still some issues with this toplogy:
 
@@ -668,6 +792,8 @@ As the name implies, conflict avoidance just has us avoid conflicts altogether b
 
 In a last-write wins conflict resolution strategy, we use the timestamp of the write to determine what the value of a key should be. The write with the latest timestamp wins
 
+![last-write-wins](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/multi-leader-lww.png?alt=media&token=c8f56197-4ec0-4a56-9d7f-1c4168d15f6b)
+
 Determining what timestamp to use can be tricky - for one thing, which timestamp do we trust? Sender timestamps are unreliable since clients can spoof their timestamp to be years in the future and ensure their write always wins.
 
 Receiver timestamps, surprisingly, can also be unreliable. Computers rely on quartz crystals which vibrate at a specific frequency to determine the time. Due to factors like weather conditions and natural degredation, these frequencies can change. This results in computers having slightly different clocks over time, a process known as **clock skew**
@@ -679,18 +805,41 @@ Receiver timestamps, surprisingly, can also be unreliable. Computers rely on qua
 
 A version vector is just an array that contains the number of writes a given node has seen from every other node. For example, `[1, 3, 2]` represents "1 write from partition 1, 3 writes from partition 2, and 2 writes from partition 3"
 
-We then use this vector to either merge data together and resolve the conflict or store sibling data and offload conflict resolution to the client. For example, if we have `[1, 1, 2]` vs. `[2, 2, 2]`, we know the second version vector is more up to date
+We then use this vector to either merge data together and resolve the conflict or store sibling data and offload conflict resolution to the client. Let's look at an example:
+
+![version-vectors](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/multi-leader-version-vectors.png?alt=media&token=e19a9e6c-adbb-4330-899d-5431f90d5c5c)
 
 #### CRDT (Conflict-Free Replicated Data Types)
 
 CRDTs are special data structures that allow the database to easily merge data types to resolve write conflicts. Some examples are a counter or a set.
 
-- **Operational CRDTs**: Database nodes send operations to each other to keep their data in sync (e.g., sending increment operations to keep a distributed counter in sync).
-  - Not idempotent, so don’t do well when we have duplicate or dropped requests.
-  - Furthermore, if there are causally dependent operations, we might run into some trouble.
-- **State-based CRDTs**: Database nodes send the entire CRDT itself.
-  - These can be propagated through the system via the Gossip Protocol, in which nodes in the cluster send their CRDTs to some other random nodes (which may have already seen the message).
-  - CRDTs can grow large, which may result in a lot of data being sent over the network.
+##### Operational CRDTs
+
+Database nodes send operations to each other to keep their data in sync. These have some latency benefits compared to state-based CRDTs since we don't need to send as much data over the network.
+
+![operational-crdt](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/operational-crdt.png?alt=media&token=bd01ad15-6b75-4ef5-8686-54b319321687)
+
+However, there are a few problems with Operational CRDTs. For one thing, they're not _idempotent_, so don’t do well when we have duplicate or dropped requests. For example in the distributed counter above, if we sent that increment operation multiple times due to some kind of failure / retry mechanism, we could have some issues.
+
+Furthermore, what if we have _causally dependent_ operations? For example:
+
+![operational-crdt-causal-dep](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/operational-crdt-causal-dep.png?alt=media&token=1492f730-ae84-4082-91d6-c8890e505e75)
+
+##### State-based CRDTs
+
+Database nodes send the entire CRDT itself, and the nodes "merge" states together to update their states. The "merge" logic must be:
+
+- Associative: `f(a, f(b, c)) = f(f(a, b), c)`
+- Commutative: `f(a, b) = f(b, a)`
+- Idempotent: `f(a, b) = f(f(a, b), b)`
+
+Let's take a look at an example.
+
+![state-crdt](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/state-crdt.png?alt=media&token=a72a6438-b43f-488c-8102-5c1b94aa5630)
+
+We can see that Node 1 sending that set multiple times would result in the same merged result on Node 2. This idempotency also enables state CRDTs to be propagated via the _Gossip Protocol_, in which nodes in the cluster send their CRDTs to some other random nodes (which may have already seen the message).
+
+![gossip-protocol](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/gossip-protocol.png?alt=media&token=df30061a-e938-4a6b-9bb8-36e4de2d8924)
 
 #### Multi-Leader replication in the wild
 
@@ -703,6 +852,8 @@ Leaderless replication forgoes designating specific nodes as leader nodes entire
 ### Quorums
 
 To guarantee that we have the most recent values whenever we read from the system, we need a **quorum**, which just means "majority"
+
+![leaderless-quorum](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/leaderless-quorums.png?alt=media&token=8f80d154-317f-44f8-8e8e-433008000f6f)
 
 Writers write to a majority of nodes so that readers can guarantee that at least one of their return values will be the most recent when they read from a majority of nodes. In mathematical terms:
 
@@ -724,9 +875,9 @@ Let's imagine a client is able to talk to _some_ database nodes during a network
 1. Return errors for all requests for which we can't reach a quorum of nodes
 2. Accept writes anyways, but write them to nodes that _are_ reachable, but which aren't necessarily the nodes that we normally write to.
 
-The 2nd option causes a _sloppy quorum_ where the _W_ and _R_ in our inequality aren't among the designated _N_ "home" nodes. For example, if replication nodes for the US region fail, we could establish a quorum using some nodes from the EU region instead.
+The 2nd option causes a _sloppy quorum_ where the _W_ and _R_ in our inequality aren't among the designated _N_ "home" nodes. Once the original home nodes come back up, we need to propagate the writes that were sent to those temporary writer nodes back to those home nodes. This process is called _hinted handoff_. Let's take a look at an example:
 
-Once the original home nodes come back up, we need to propagate the writes that were sent to those temporary writer nodes back to those home nodes. This process is called _hinted handoff_.
+![leaderless-sloppy-quorums](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/leaderless-sloppy-quorums.png?alt=media&token=1be90923-9636-46cc-9113-3919a034db74)
 
 ### Anti-Entropy
 
@@ -735,6 +886,8 @@ Another way to prevent stale reads is to propagate writes in the background betw
 One way to do this is to just send the entire replication log with all the writes from node A. But this would be inefficient since all we need is the diff (just writes 1 and 4).
 
 We can quickly obtain this diff using a **Merkle Tree**, which is a tree of hashes computed over data rows. Each individual row gets hashed to a value, and those values are combined and hashed hierarchically until we get a root hash over all the rows.
+
+![merkle-tree](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/leaderless-merkle-trees.png?alt=media&token=16a6f055-8700-48c5-9beb-772e14e643ef)
 
 Using a binary tree search, we can efficiently identify what's changed in a dataset by comparing hash values. For example, the root hash will tell us if there is any change across our entire data set, and we can examine child hashes recursively to track down which specific rows have changed.
 
@@ -777,18 +930,30 @@ For choosing partitions, we have some different options:
 
 ## Functional partitioning (Federation)
 
-Federation (or functional partitioning), splits up databases by function. An example of this is an e-commerce application like Amazon breaking up databases into users, reviews, and products rather than having one monolothic database that stores everything.
+Federation (or functional partitioning), splits up databases by function. For example, an e-commerce application like Amazon could break up their data into users, reviews, and products rather than having one monolothic database that stores everything.
 
-This gives us greater read and write throughput and minimizes replication lag. In addition, since datasets are smaller, we can cache more effectively since we can fit more of the dataset in memory. However, application logic will need to keep track of which database to read and write to and joins may end up being more complicated.
+![federation](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/federation.png?alt=media&token=a1906443-075d-4a34-b605-03625b97aa9e)
+
+Federated databases are accompanied by a **Federated Database Management System** (FDBMS), which sits on top of the various domain-specific databases and provides a uniform interface for querying and storing data. That means users can store and retrieve data from multiple different data sources with just a single query. In addition, each of these individual databases is autonomous, managing data for its specific function or feature independently of others. Thus, an FDBMS is known as a _meta_ database management system.
+
+Splitting up data in this manner enables greater flexibility in terms of the types of data sources that we use. Different functional domains can use different data storage technologies or formats, and our federation layer serves as a layer of abstraction on top. That also means we have greater extensibility. When an underlying database in our federated system changes, our application can still continue to function normally as long as that database is able to integrate with the federated schema.
+
+Of course, having this federation layer adds additional complexity to our system, since we'll need to reconcile all these different data stores. Performing joins over different databases with potentially different schemas may be complex, for example. Furthermore, having to do all this aggregation logic could impact performance.
 
 ## Local / Global Secondary Indexes
 
+A _secondary index_ is an additional index that's stored alongside your primary index, which might keep data in a different sort order to improve the performance of certain other queries which might not benefit from the sort order of the primary index. There are two main types of secondary indexes.
+
 **Local secondary indexes** are indexes local to a specific partition on a particular column.
+
+![local-secondary-index](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/local-secondary-index.png?alt=media&token=5e6a97dd-88f3-447e-82a1-a81c373a0be3)
 
 - Writing is fairly straightforward - every time we write a value to a partition, we also write it into the index on the same node.
 - Reading is slower since we need to scan through the local secondary index of every partition and stitch together the result.
 
 **Global secondary indexes** are indexes over the entire dataset, split up across our partitions.
+
+![global-secondary-index](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/global-secondary-index.png?alt=media&token=20af19b5-caa7-4109-a1a5-92429e00d6ad)
 
 - Reading becomes much faster since we don’t need to query every single partition’s index. We can hone in on just the partitions that store whatever range we’re looking for.
 - Writes will become slower since we might end up saving a key on two different partitions if the indexed location for that key is not in the same partition as its hash.
@@ -797,17 +962,27 @@ This gives us greater read and write throughput and minimizes replication lag. I
 
 You might think a natural way to partition data is with the _modulo_ operator. If we have 3 partitions, for example, every key gets assigned to the partition corresponding to the hash of that key modulo 3.
 
-But then what if one of the partitions goes down? Then we need to repartition across our whole dataset since now every key should be assigned to the partition corresponding to its hash modulo 2. This is obviously not ideal - we need some way to only rebalance the keys from the partition node that went down.
+But then what if one of the partitions goes down? Then we need to repartition across our whole dataset since now every key should be assigned to the partition corresponding to its hash modulo 2.
 
-One way that we can accomplish just that is to use consistent hashing instead. In this scheme, we define hash ranges for every partition in such a way that whenever a partition goes down, we can extend the range for the remaining partitions to include the keys that were part of the partition that just went down.
+![mod-partition](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/mod-partition.png?alt=media&token=0922ba17-c6bc-4d68-bb30-1b4a76a7c33d)
+
+Is there some way we could rebalance the keys from _only_ the partition that went down?
+
+We can accomplish this through **consistent hashing**. In this scheme, we define hash ranges for every partition in such a way that whenever a partition goes down, we can extend the range for the remaining partitions to include the keys that were part of the partition that just went down.
 
 In the event that the partition comes back online, we just reallocate those keys back to the partition in which they originally belonged.
+
+![consistent-hashing](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/consistent-hashing.png?alt=media&token=00c0520c-9089-4335-8a5a-9a8e169e1ba8)
+
+ByteByteGo also has a great [video explanation of how this process works](https://youtu.be/UF9Iqmg94tk?si=ReiA315ePHGhSKOR&t=163)
 
 ## Fixed Partition Rebalancing
 
 We can also define a fixed number of partitions we have across our entire system rather than tying the number of partitions to the number of available nodes.
 
-For example, if we have 4 partitions across 3 nodes (12 total), if a node goes down we can divide the 4 that are orphaned across the remaining 2 nodes. Additionally, if we were to gain a node in our system, we could extract 3 partitions out and place them in that node. We utilize our system resources more effectively by distributing partitions to nodes according to their hardware capacity and performance - give more of the orphaned partitions to the more powerful machines.
+![fixed-partition](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/fixed-partitions.png?alt=media&token=d3c12cd2-3fda-4b02-beca-607bd2b989ca)
+
+We can also utilize our system resources more effectively by distributing partitions to nodes according to their hardware capacity and performance, e.g. give more of the orphaned partitions to the more powerful machines.
 
 A downside that might occur with this approach is that as our database grows, the size of each partition will grow in turn, since the total number of partitions is static. So that means we'd need to pick a good fixed partition number from the outset: one that isn't too large so as to make recovery from node failures expensive and complex, but also one that isn't too small so as to incur too much overhead.
 
@@ -830,22 +1005,21 @@ Furthermore, an important abstraction that many distributed systems rely on is t
 
 Two Phase Commit is a way of performing distributed writes or writes across multiple partitions while guaranteeing the atomicity of transactions (writes either succeed on every partition or fail on every partition).
 
-Writing to different partitions is unlike the propagating writes across replicas because a single transaction to multiple partitions is effectively one logical write split up across multiple nodes. Hence this write needs to be atomic.
+Writing to different partitions is unlike propagating writes across replicas because a single transaction to multiple partitions is effectively one logical write split up across multiple nodes. Hence this write needs to be atomic.
 
-Two phase commit first designates a coordinator node to orchestrate the process. Afterwards, sending requests to every partition node to initiate the process, the following occurs:
+Two-phase commit designates a _coordinator node_ to orchestrate the process. This node is usually just the application server performing the cross-partition write.
 
-- Each partition looks at its write-ahead log and determines whether it is able to add the write or not.
-  - If yes, it will grab the locks for the affected rows and send back a success response before waiting for further action.
-  - If no, it will send back a failure response.
-- If all partitions send back a success response, the coordinator node writes in its commit log that the transaction should be committed across all nodes.
-  - In the event of a failure at this point, the coordinator could read back from the commit log to retry the process.
-- After doing this, the coordinator will tell all partition nodes to commit, and they all do so locally and respond accordingly when completed.
+The following diagram describes the "happy case" flow for two-phase commit.
 
-There are a few issues with Two Phase Commit:
+![two-phase-commit](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/2pc.png?alt=media&token=22a4e26f-4128-474b-8c2b-facdb19425bd)
 
-- Single point of failure, the coordinator node could go down and cause the partition nodes to hold their locks, preventing other writes until the coordinator comes back online.
+A few issues can arise:
+
+- If a node is unable to commit due to a conflict, the coordinator node will need to send an ABORT command to that node and stop the entire process.
+- If the coordinator node goes down, all the partition nodes will hold onto their locks, preventing other writes until the coordinator comes back online.
 - If a receiver node goes down after the commit point, the coordinator node will have to send a request to commit repeatedly until the receiver comes back online.
-- Basically, we want to avoid 2PC whenever possible because it's slow and hard. So try to avoid writing across multiple partitions if possible.
+
+We generally want to avoid 2PC whenever possible because it's slow and hard. So try to avoid writing across multiple partitions if possible.
 
 ## Linearizable Storage
 
@@ -879,7 +1053,9 @@ Version vectors take O(N) space where N is the number of replicas, so it might n
 
 A Lamport clock is a counter stored across every replica node which gets incremented on every write, both on the client AND the database.
 
-Whenever we read the counter value on the client side, we write back the max of the database counter and the client counter alongside the write. This value overrides the one on both the client and server, guaranteeing that all writes following this one will have a higher counter value. When sorting writes, we sort by the counter. If they’re the same, we can sort by node number.
+Whenever we read the counter value on the client side, we write back the max of the database counter and the client counter alongside the write. This value overrides the one on both the client and server, guaranteeing that all writes following this one will have a higher counter value. When sorting writes, we sort by the counter. If they’re the same, we can sort by node number. Let's see an example of how this might work:
+
+![lamport-clock-example](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/lamport-clocks.png?alt=media&token=bc01dcd0-4f3a-4e66-a41d-b6d3cdb7b43d)
 
 Unfortunately, we could still end up READING old data if replication hasn’t propagated through the system, so this isn’t actually linearizable storage. We only get ordering of writes after the fact.
 
@@ -906,22 +1082,27 @@ Thus, the _PACELC theorem_ attempts to address some of its shortcomings, preferr
 
 The **Raft distributed consensus protocol** provides a way to build a distributed log that’s linearizable.
 
-### Raft Leader Election
+### Proposing a new leader in RAFT
 
 Below is the process for electing a new leader in Raft:
 
-- One node is designated as a leader and sends heartbeats to all of its followers.
-- If a heartbeat is not received after some randomized number of seconds (to prevent simultaneous complaints), a follower node will initiate an election.
-- Follower node proposes itself as a candidate for the election corresponding to the next term.
-  - If the leader comes back online, it will change itself to a follower for the next term and vote “yes”.
-- The election is held as follows:
+One node is designated as a leader and sends heartbeats to all of its followers. If a heartbeat is not received after some randomized number of seconds (to prevent simultaneous complaints), a follower node will initiate an election.
 
-  - A follower from a previous term number (which is determined by the latest write that it’s seen) will change itself to a follower of the proposed term number and vote “yes”.
-  - A follower who has a write from a newer term number will vote “no” and also update its own term number value to the one being proposed if it is higher.
+Follower node proposes itself as a candidate for the election corresponding to the next term.
 
+![raft-leader-proposal](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/RAFT-leader-proposal.png?alt=media&token=e4a51c5c-0845-48f4-8a07-2933bd12ca7f)
+
+### Leader election
+
+The election is held as follows:
+
+- A follower from a previous term number (which is determined by the latest write that it’s seen) will change itself to a follower of the proposed term number and vote “yes”.
+- A follower who has a write from a newer term number will vote “no” and also update its own term number value to the one being proposed if it is higher.
 - If a candidate gets “yes” votes from a quorum of nodes, it wins the election and becomes the new leader.
 
-### Raft Writes
+![raft-leader-election](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/RAFT-leader-election.png?alt=media&token=8d5b5d44-270d-4327-a4e1-25c38ca05ea6)
+
+### Raft Write Backfills
 
 In Raft, we designate a leader that handles all writes. These writes are recorded in the form of logs, which contain an operation and a term number. Given the fact that only one node handles writes, it's possible that followers could have out of date logs.
 
@@ -932,13 +1113,9 @@ Raft has 2 invariants when it comes to writes to address out of date logs:
 
 So writes backfill logs in addition to writing new values in order to keep them up to date. Furthermore, this invariant guarantees that if two logs are the same at a given point in time, every entry prior to that point will be the same
 
-How does this actually work in practice? Whenever a new write arrives to the leader, the leader will broadcast it to the follower nodes along with the write it has at its latest index. Then the following occurs:
+How does this actually work in practice? Let's look at a diagram of the process:
 
-- If a follower node does not have the write at the current index, it will respond with a failure message.
-  - The leader will decrement its index and try again and again until it matches on an index that the follower does have the write for.
-  - At that point, the follower will backfill its own log and respond with a success message.
-- Otherwise, the follower will just update its log and respond with a success message.
-- Once the leader hears “yes” from a quorum of nodes, it will tell everybody to commit.
+![raft-write-backfills](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/RAFT-write-backfills.png?alt=media&token=0bab4089-a7b7-47a1-9d82-4b2b7cd4bf3d)
 
 In conclusion, Raft is fault-tolerant and creates linearizable storage; however, it is slow and shouldn’t be used except in very specific situations where you need write correctness.
 
@@ -1002,11 +1179,17 @@ There are a few different methods for writing to a distributed cache.
 
 ### Write-Around Cache
 
-A **write-around** caching strategy entails sending writes directly to the database, going "around" the cache. Of course, this means that the corresponding cached value will now be stale. We have a couple of ways to fix this:
+A **write-around** caching strategy entails sending writes directly to the database, going "around" the cache.
+
+![write-around-cache](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/write-around-cache.png?alt=media&token=242e7e93-c579-48ef-9836-83d1558e2d98)
+
+Of course, this means that the corresponding cached value will now be stale. We have a couple of ways to fix this:
 
 1. Stale Read / TTL - We set a Time To Live (TTL) on the value in the cache, which is like an expiration date. Reads to the cache key will be stale until the TTL expires, at which point the value will be removed from the cache. A subsequent read on that key will go to the database, which will then repopulate the cache and set a new TTL
 
 2. Invalidation - After writing to the database, we also invalidate its corresponding key in the cache. Subsequent reads will trigger the database to repopulate the cached value.
+
+![stale-reads](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/write-around-cache-stale-reads.png?alt=media&token=4bdf62f1-5e18-4c23-8fa0-6e7237bab41d)
 
 ### Pros and Cons of Write-Around
 
@@ -1017,6 +1200,8 @@ A **write-around** caching strategy entails sending writes directly to the datab
 
 A **write-through** caching strategy is when we send writes to the cache, then proxy that request to the database. This means we may have inconsistent data between our cache and our database. Sometimes that isn't an issue, but in the cases where it is, we'd need to use two phase commit (2PC) to guarantee correctness.
 
+![write-through](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/write-through-cache.png?alt=media&token=4629de59-fa5d-4b55-8a72-02301e129823)
+
 ### Pros and Cons of Write-Through
 
 - _Pros:_ Data is consistent between the cache and the database.
@@ -1026,6 +1211,8 @@ A **write-through** caching strategy is when we send writes to the cache, then p
 
 A **write-back** caching strategy is similar to the write-through caching strategy, except writes aren’t propagated to the database immediately. We do this mainly to optimize for lower write latency since we’re writing to the cache without having to also write to the database. The database write-back updates are performed asynchronously - at some point down the line, or maybe on a fixed interval, we group writes in the cache and send them to the database together.
 
+![write-back](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/write-back-cache.png?alt=media&token=bffd175e-b8a8-464f-a372-68b739c1c299)
+
 There are a few problems that could occur - for one thing, if the cache just fails, then writes never go to the database and we have incorrect data. We can provide better fault tolerance through replication, though this may add a lot of complexity to the system.
 
 Furthermore, if a user tries to read directly from the database before the write backs can happen, they may see a stale value. We can mitigate this with a distributed lock:
@@ -1033,6 +1220,10 @@ Furthermore, if a user tries to read directly from the database before the write
 1. Whenever we write to the key in our cache, we also grab the distributed lock on that key.
 2. We hold the lock until somebody tries to also grab that lock while reading that key in the database.
 3. This other attempt to grab the lock would trigger a write back from the cache to the database, allowing the reader to see the up to date value.
+
+Here's a diagram of that process:
+
+![distributed-lock-wb-cache](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/write-back-distributed-lock.png?alt=media&token=3246b4b1-0d2c-4cb0-894b-9abce77c20d2)
 
 Again, this adds a lot of complexity and latency, so we typically try to avoid needing to do this.
 
@@ -1047,17 +1238,23 @@ Our caches have limited storage space, so we'll need to figure out how best to m
 
 ### First-in First-out
 
+![fifo-eviction](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/FIFO-eviction.png?alt=media&token=60694623-ecc7-4e8a-bc9c-e76bdf6cf99b)
+
 The first value in the cache becomes the first value to be evicted. It's relatively simple to implement since it's basically a queue. Every time we add a new value to the cache, we delete whatever the oldest value in the cache was.
 
 The major problem with this is that we don't consider data access patterns and might evict data that's still actively being queried. For example, even if many users are querying a specific key, that key will eventually become the oldest key added to the cache as new data is added. It will subsequently be evicted despite being the most popular key.
 
 ### Least Recently Used
 
-A better policy for evicting data is the "Least Recently Used" (LRU) policy, the most commonly used eviction policy in practice. In LRU, the last _accessed_ key gets evicted, and more recently used keys get to stay in the cache. This solves the problem we saw earlier with First-in First-out - popular keys will remain cached since they will keep being used.
+![lru-eviction](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/LRU-eviction.png?alt=media&token=9d2175c6-6c23-4951-a387-7c806fbcfc4a)
+
+A better policy for evicting data is the "Least Recently Used" (LRU) policy. This is the most commonly used eviction policy in practice. In LRU, the last _accessed_ key gets evicted, and more recently used keys get to stay in the cache. This solves the problem we saw earlier with First-in First-out - popular keys will remain cached since they will keep being used.
 
 LRU is a bit more complicated to implement - rather than just having a queue we'd need to use a hashmap with a doubly linked list. We need a hashmap to identify the node to move to the head of the list, and a doubly-linked list to be able to shift things around in O(1) time.
 
 ### Least Frequently Used
+
+![lfu-eviction](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/LFU-eviction.png?alt=media&token=523b0cc4-ae74-4caf-9ce5-a7aee9f6c1de)
 
 A more sophisticated alternative is "Least Frequently Used", where we keep track of the _frequencies_ that a key is being accessed and evict according to that.
 
@@ -1071,7 +1268,15 @@ Content Delivery Networks (CDNs), are geographically distributed caches for stat
 
 There are a couple of types of CDNs:
 
+### Push-based
+
+![push-cdn](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/push-cdn.png?alt=media&token=9f45d177-d85f-491f-9e9c-11d4981fa889)
+
 A **push CDN** pre-emptively populates content that we know will be accessed in the CDN. For example, a streaming service like Netflix may have content that comes out every month that they'd anticipate their subscribers will consume, so they pre-load it onto their CDNs
+
+### Pull-based
+
+![pull-cdn](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/pull-cdn.png?alt=media&token=961a2120-ce6f-491a-a8cb-96d831d954a0)
 
 A **pull CDN**, in contrast, only populates the CDN with content when a user requests it. These are useful for when we don’t know in advance what content will be popular.
 
@@ -1103,11 +1308,15 @@ The **Hadoop Distributed File System**, or HDFS, is a distributed, fault toleran
 
 The architecture of HDFS has two main elements: **Name Nodes**, which are used for keeping track of metadata, and **Data Nodes**, which are used for actually storing the files.
 
+![hdfs-high-level](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/hdfs-high-level.png?alt=media&token=f74d36c0-2e9d-4e57-9d85-aa424db69d3c)
+
 ### Name Node Metadata
 
 Every name node keeps track of metadata telling us which data node replicas store a given file, along with what version of the file the replicas have. This metadata is stored in memory (for read performance) with a write ahead log saved on disk for fault tolerance.
 
 When a name node starts up, it asks every data node what files it contains and what versions they are. Based on this information, it replicates files to data nodes using a configurable "replication number". For example, if we setup HDFS to use a replication number of 3 and the name node sees that a file is only stored on 2 data node replicas, it will go ahead and replicate that file to a 3rd data node.
+
+![name-node-metadata](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/name-node-metadata.png?alt=media&token=2f24507a-60e7-4065-8432-e50e62e63a44)
 
 ### Reading Data from HDFS
 
@@ -1117,6 +1326,8 @@ Generally we expect to read data from HDFS more often than we write it. The read
 2. The name node replies with the best data node replica for the client to read from
 3. The client caches the data node replica location
 4. The client reads the file from that data node replica
+
+![hdfs-reads](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/hdfs-reads.png?alt=media&token=8957f7e5-c81b-4fef-b4ea-81aeedb33d4f)
 
 The "rack awareness" feature comes into play in step 2. The name node determines which replica is best for the client based on the client's proximity to it. Once the client receives that information, it can just save it in its cache rather than having to ask the name node every time.
 
@@ -1128,21 +1339,25 @@ When we write to HDFS, the name node has to select the replica it writes to in a
 2. The name node will respond with a primary, secondary, and tertiary data node to the client based on ascending order of proximity
 3. The client will write their file to the primary data node
 
+![hdfs-writes](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/hdfs-writes.png?alt=media&token=7d27f4fc-357f-48ad-9d53-0461b2572a23)
+
 The name node will replicate across data nodes that might be in the same data center in order to minimize network latency. For example, the primary and secondary data nodes it responds with in step 2 may be in one data center, with the tertiary data node in another.
 
 ### Replication Pipelining
 
-Notice that the client only writes to one data node in the previous example. HDFS propagates the file to the secondary and tertiary data nodes in a process known as "replication pipelining". This process is fairly straightforward: every replica will write to the next replica in the chain, e.g. primary writes to secondary, secondary writes to tertiary.
+Notice that the client only writes to one data node in the previous example. HDFS propagates the file to the secondary and tertiary data nodes in a process known as "replication pipelining". This process is fairly straightforward: every replica will write to the next replica in the chain, e.g. primary writes to secondary, secondary writes to tertiary. On each successful write, an acknowledgement will be received. Under normal circumstances, the acknowledgement will propagate its way back to the client when the replication has succeeded across all data nodes.
 
-On each successful write, an acknowledgement will be received. Under normal circumstances, the acknowledgement will propagate its way back to the client when the replication has succeeded across all data nodes. However, if there's a network failure between a primary and a secondary data node for example, the client won't receive this acknowledgement and data might not successfully replicate.
+![replication-pipelining](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/hdfs-replication-pipelining.png?alt=media&token=4745ddfa-268c-443d-8d6a-8a50de1751ae)
 
-The client at this point can accept eventual consisteny, or it can continue to retry until it receives that acknowledgement. However, it's not guaranteed that that acknowledgement will ever be received. As a result, HDFS cannot be called strongly consistent.
+If there's a network failure between a primary and a secondary data node for example, the client won't receive this acknowledgement and data might not successfully replicate. The client at this point can accept eventual consisteny, or it can continue to retry until it receives that acknowledgement. However, it's not guaranteed that that acknowledgement will ever be received. As a result, HDFS cannot be called strongly consistent.
 
 ### High Availability HDFS
 
-Name nodes represent a single point of failure in our system if we only have one of them. HDFS solves for this issue using a coordination service like Zookeeper to keep track of backup name nodes. Coordination services are strongly consistent via the use of distributed consensus algorithms.
+Name nodes represent a single point of failure in our system if we only have one of them. HDFS solves for this issue by using a coordination service like Zookeeper to keep track of backup name nodes. Coordination services are strongly consistent via the use of distributed consensus algorithms.
 
 If a primary name node fails, its write ahead log operations stored in Zookeeper, will be replayed to the secondary name node to reconstruct the metadata information in memory. That secondary name node will then be designated as the new primary name node. This replay process is known as _state machine replication_.
+
+![high-availability-hdfs](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/high-availability-hdfs.png?alt=media&token=ee07017f-624b-4490-809e-edaa495046ec)
 
 ### Apache HBase
 
@@ -1156,13 +1371,17 @@ Apache HBase, an open-source database built on top of HDFS, can help us solve th
 
 HBase, similar to Apache Cassandra, is a NoSQL Wide Key Store. Recall that a **wide-column database** organizes data storage into flexible columns that can be spread across multiple servers or database nodes. Each row has a required cluster and sort key, and every other column value after that is optional.
 
+![wide-column-store](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/wide-column-store.png?alt=media&token=c60e4a23-3b45-4791-a5de-37a30d6295c5)
+
 **Architecture**
 
 Similar to HDFS, HBase maintains master nodes and partition nodes. The master node provides the same functionality as a name node in HDFS, storing metadata about data nodes and directing clients who want to read and write to their optimal data node.
 
 The partition node, however, contains an HDFS data node as well as a _region node_. The region node stores and operates the LSM Tree in memory and flushes it to an SSTable stored in the data node when it gets to a certain capacity. The data node, as we saw in the HDFS section, will then replicate these SSTables to other data nodes in the replication pipeline.
 
-In addition to this, HBase also uses column oriented storage, which enables it to do large analytical queries and batch processing jobs over all the values for a single column efficiently.
+![apache-hbase](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/apache-hbase.png?alt=media&token=fcbcbf0a-203d-41c6-ac0d-904f38518f26)
+
+In addition to this, HBase also uses [column oriented storage](/topic/01_storage_and_serialization?subtopic=02_column_oriented_storage), which enables it to do large analytical queries and batch processing jobs over all the values for a single column efficiently.
 
 **When do we use HBase?**
 
@@ -1170,10 +1389,10 @@ HBase is good if you want the flexibility of normal database operations over HDF
 
 ## MapReduce
 
-MapReduce is a programming model or pattern within the Hadoop framework that allows us to perform batch processing of big data sets. There are a few main advantages to using MapReduce:
+MapReduce is a programming model or pattern within the Hadoop framework that allows us to perform batch processing of big data sets. There are a few advantages to using MapReduce:
 
-- We can run arbitrary code, we just define custom mappers and reducers
-- Run computations on the same nodes that hold the data for data locality benefits
+- We can run arbitrary code with custom mappers and reducers
+- We can run computations on the same nodes that hold the data, granting us data locality benefits
 - Failed mappers/reducers can be restarted independently
 
 As the name implies, Mappers and Reducers are the basic building blocks of MapReduce:
@@ -1185,11 +1404,15 @@ As the name implies, Mappers and Reducers are the basic building blocks of MapRe
 
 Every data node will have a bunch of unformatted data stored on disk. The MapReduce process then proceeds as follows (in memory on each data node):
 
-- Map over all the data and turn it into key-value pairs using our Mappers
-- Sort the keys. We'll explain why we do this later, but the gist is that it's easier to operate on sorted lists when we reduce.
-- Shuffle the keys by hashing them and sending them to the node corresponding to the hash. This will ensure all the key-value pairs with the same key go to the same node. The sorted order of the keys is maintained on each node.
-- Reduce the key-value pairs. We'll have a bunch of key-value pairs at this point that have the same key. We want to take all those and reduce it to just a single key-value pair for each key.
-- Materialize the reduced data to disk
+1. Map over all the data and turn it into key-value pairs using our Mappers
+2. Sort the keys. We'll explain why we do this later, but the gist is that it's easier to operate on sorted lists when we reduce.
+3. Shuffle the keys by hashing them and sending them to the node corresponding to the hash. This will ensure all the key-value pairs with the same key go to the same node. The sorted order of the keys is maintained on each node.
+4. Reduce the key-value pairs. We'll have a bunch of key-value pairs at this point that have the same key. We want to take all those and reduce it to just a single key-value pair for each key.
+5. Materialize the reduced data to disk
+
+Here's a diagram of what that process might look like:
+
+![mapreduce-flow](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/mapreduce-flow.png?alt=media&token=668d47ef-b5e3-4ca1-b63f-8ca58df22223)
 
 **Why do we sort our keys?**
 
@@ -1260,19 +1483,25 @@ We have a few ways to do this:
 
 In a **sort merge join**, we sort the keys in each partition, then hash the keys to assign them to the same partition, and then join them together, effectively merging sorted lists
 
+![sort-merge-join](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/sort-merge-join.png?alt=media&token=33413269-e595-4028-9fb3-1b5fb0b90606)
+
 This can be slow since we need to sort all the data by the join key, and we’ll need to send at least one whole dataset over the network, possibly both depending on how they are partitioned
 
 **Broadcast Hash Join**
 
 If we have a small dataset, we can send it to all partitions and store them entirely in memory as a hash map. That's the basis for a **Broadcast Hash Join**, in which we linearly scan through our large dataset and check it against our hash map to join it.
 
+![broadcast-hash-join](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/broadcast-hash-join.png?alt=media&token=c760ce5e-12bc-47dc-a58c-4204c2e44fe3)
+
 In this case, we don't need to sort our large dataset at all, saving a lot of time. Plus, sending _just_ the small dataset over the network can be much more efficient.
 
 **Partition Hash Join**
 
-But what if neither dataset is small enough to fit in memory? That's where the **partition hash join** comes in - we can just _partition_ the our datasets into smaller datasets so that they _do_ fit in memory. From there, we can just do a normal hash join.
+But what if neither dataset is small enough to fit in memory? That's where the **partition hash join** comes in - we can just _partition_ the datasets into smaller datasets so that they _do_ fit in memory. From there, we can just do a normal hash join.
 
 It's important here that we partition both our datasets the same way so that the keys in each partition correspond to each other and go to the same node.
+
+![partition-hash-join](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/partition-hash-join.png?alt=media&token=75e0a558-dd40-4172-a0d1-af4bfdf3aa45)
 
 ## Apache Spark
 
@@ -1288,10 +1517,33 @@ Enter Apache Spark, which tries to address these issues:
 - Instead of requiring mappers and reducers, we instead have operator functions (which could be mapping or reducing)
 - Spark stores intermediate states in memory instead of on disk. It only stores the input and output results on disk
 
+### Spark Architecture
+
+#### Resilient Distributed Datasets
+
+_Resilient Distributed Datasets_ (RDD)s are a core abstraction in Spark. They are immutable, distributed collections of elements of your data that can be operated on in parallel.
+
+RDDs are abstractions of data collections sourced from multiple partitions and/or data stores (e.g. SQL tables, HDFS files, text files). Furthermore, Spark processes RDDs entirely in memory, which provides some nice performance benefits.
+
+![spark-rdd](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/spark-rdd.png?alt=media&token=59fd8a6f-cfed-46e6-955e-c1abdae5af96)
+
+#### How Spark Jobs Run
+
+Spark applications are coordinated by a main program (known as a driver), which spins up a SparkContext object. The SparkContext object orchestrates tasks by talking to a cluster manager service like [Kubernetes](/topic/13_software_architecture?subtopic=02_containers), Mesos, or Spark's own standalone cluster manager. It requests "executors" on nodes in the cluster, which are processes that perform computations and store data. The SparkContext then forwards application code (JAR or Python files) to the executors. Finally, it sends tasks to the cluster manager, which will then schedule and run them on the nodes using a Direct Acyclic Graph (DAG) Scheduler.
+
+![spark-execution](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/spark-execution.png?alt=media&token=aa10797a-5921-4418-bc01-32408ead9aa7)
+
+#### Fault Tolerance
+
 Of course, the fact that Spark does everything in memory naturally raises concerns about fault-tolerance. Fortunately, it has some mechanisms to ensure that we can recover from faults:
 
-- For narrow dependencies where computations on a given node don’t depend on data from other nodes, if a node goes down, its workload can be split across the remaining nodes and re-processed in parallel
-- For wide dependencies where computations on a node depend on data from multiple other nodes, Spark writes data to disk to enable nodes to recover state after these steps are completed
+For **narrow dependencies** where computations on a given node don’t depend on data from other nodes, if a node goes down, its workload can be split across the remaining nodes and re-processed in parallel
+
+![narrow-dependency](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/spark-narrow-dependencies.png?alt=media&token=a31fd10a-e87d-4c39-8d6b-2f598e47fd11)
+
+For **wide dependencies** where computations on a node depend on data from multiple other nodes, the process is much more tedious. If a node fails, its upstream states will need to be recomputed. Luckily, Spark automatically checkpoints data to disk after a wide dependency.
+
+![wide-dependency](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/spark-wide-dependency.png?alt=media&token=c6b42c7b-9285-4a8c-9675-8feceb90b65f)
 
 ## Additional Reading / Material
 
@@ -1312,35 +1564,55 @@ The general structure of stream processing systems involves two main stakeholder
 
 Instead of having many long lived connections between producers and consumers to handle event propagation, we have a _message broker_, which takes on the responsibility of ingesting events from producers and pushing them to consumers. The typical underlying implementation of these are queues.
 
+![message-brokers](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/message-brokers.png?alt=media&token=01e1e11d-1af5-424f-924e-4e9b02fcda20)
+
 There are two types of message brokers: in-memory message brokers, and log-based message brokers
 
 ### In-memory Message Brokers
+
+_Examples: RabbitMQ, ActiveMQ, Azure Service Bus, Google Cloud Pub/Sub_
+
+![in-memory-message-broker](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/in-memory-message-broker.png?alt=media&token=3b200a00-e01c-4496-b48f-3de3ae1a4b88)
 
 In-memory message brokers keep all messages in memory and typically optimize for higher throughput at the expense of ordered event processing and durability. Some typical use cases could include encoding user videos that get posted to Youtube, or sending user tweets to the news feeds of their followers
 
 When a message gets delivered, it is marked for deletion from the queue. Once the consumer that received the message sends an ack that it was processed, the message is actually deleted. This could result in fault tolerance issues - if a message queue goes down, we don't have any way of replaying messages.
 
+![in-memory-deletion](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/in-memory-broker-deletion.png?alt=media&token=ec3573e0-ca09-449c-8102-cd21125eb457)
+
 Messages are delivered to consumers in a round robin fashion. This means that if we have multiple consumers reading messages, they may not necessarily be processed in order. If the first consumer has a slow network connection or takes longer to process the message, the second consumer may end up finishing processing the subsequent message in the queue faster.
+
+![in-memory-out-of-order](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/in-memory-out-of-order.png?alt=media&token=47357746-6ae6-4ebd-9ac1-bc3416c38b61)
 
 One way to avoid this is with **fan out**, where we partition our queue into multiple queues and have each consumer exclusively read from one queue. However, this would limit our throughput which kind of defeats the purpose of using an in-memory broker.
 
+![in-memory-fanout](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/in-memory-fanout.png?alt=media&token=7e0e51ce-a396-424d-85b9-486d8cafaf68)
+
 ### Log-based Message Brokers
+
+_Examples: Apache Kafka, Amazon Kinesis Streams_
+
+![log-based-message-broker](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/log-based-message-broker.png?alt=media&token=56b04f13-ee10-4948-a39b-e82b15ca15d8)
 
 A log-based message broker keeps all its messages sequentially on disk and does not delete messages after they've been consumed. That inherently gives us more durability. Some use cases for these are processing a running average of sensor metrics, or doing change data capture - keeping writes from a database in sync with another derived data store.
 
-Every message in a log-based message broker will be stored according to the order in which it arrived. Furthermore, log based brokers keep track of which messages consumers have seen to determine what message to send next. That means every message is processed in order, so one slow to process message could potentially block all other consumers from reading. That means that in order to increase throughput, we'll need to partition our message broker.
+Every message in a log-based message broker will be stored according to the order in which it arrived. Furthermore, log based brokers keep track of which messages consumers have seen to determine what message to send next. That means every message is processed in order, so one slow to process message could potentially slow down a consumer's overall read throughput. Of course, we could mitigate this with partitioning, similar to the fan out method in which other consumers read from other queues.
+
+![log-based-throughput](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/log-based-throughput.png?alt=media&token=88efc31f-4d91-4e95-9512-dd370a7c5216)
 
 ### Exactly once message processing
 
 Exactly once message processing refers to the idea that we send a message both at least once _and_ no more than once
 
-- **At least once**: Requires our message broker to be fault-tolerant, requires some disk persistence and replication, and some consumer acknowledgment that the message was received
-- **No more than once**: Two-phase commit using a coordinator service to provide guarantees that both the broker and consumer have sent and received the message, or idempotence in the face of receiving duplicate messages but only processing them once
+**At least once**: In order to guarantee that a message is sent at least once, our message broker will need to be fault tolerant so that it can persist messages and resend in the event of failure. It will also need consumer acknowledgement that the message was received - if there are network issues and a message is not delivered successfully (lack of acknowledgement), the broker can retry.
 
-### Message Brokers in the Wild:
+**No more than once**: To ensure that a message is not sent more than once, we could use Two Phase Commit to perform a distributed transaction, guaranteeing that a consumer received and processed the message and then deleting it from the broker afterwards.
 
-- **In-memory**: RabbitMQ, ActiveMQ, Amazon SQS
-- **Log-based**: Apache Kafka, Amazon Kinesis
+![2PC-exactly-once](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/2pc-exactly-once.png?alt=media&token=5c9dbe4e-7fc5-4839-b018-0c42d2710fb0)
+
+Otherwise, we could send the message multiple times but ensure that it isn't _processed_ more than once. In other words, messages are idempotent - sending duplicates of the same message yields the same result as sending the message only once.
+
+![idempotence](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/idempotence-exactly-once.png?alt=media&token=f261f757-583c-477c-b828-8644755cff26)
 
 ## Stream Processing Use Cases
 
@@ -1348,7 +1620,9 @@ Here are a few common stream processing use cases:
 
 **Metric/Log Time Grouping and Bucketing**
 
-In Metric/Log time grouping and bucketing, we want to create time interval buckets (or tumbling window) and group events according to their timestamp
+![metric-log-grouping](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/metric-log-grouping.png?alt=media&token=c8c6f076-1317-4d47-a08c-e51e8a50e8bf)
+
+In Metric/Log time grouping and bucketing, we want to create time interval buckets (or "tumbling windows") and group events according to their timestamp
 
 Sometimes we want to aggregate over many of these intervals in our analytics (hopping window). In this case, we can use a hashmap based on our time interval (for example, one minute), and group everything that occurs within that interval together.
 
@@ -1356,11 +1630,15 @@ Other times, we just want a sliding window (get me the events that occurred in t
 
 **Change Data Capture**
 
+![change-data-capture](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/change-data-capture.png?alt=media&token=d1302e09-40af-4e4f-844a-81749e3fb27c)
+
 The idea behind Change Data Capture (CDC), is this: whenever we write to our database, we also want to store data derived from that change somewhere else (like a search index)
 
 In practice, this means that writes to our database will publish an event to the message broker, which then updates the derived data store and keeps it in sync. This prevents us from needing to do two-phase commit between the database and the derived data store.
 
 **Event Sourcing**
+
+![event-sourcing](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/event-sourcing.png?alt=media&token=2fd76598-08e9-4dcd-9558-eadf2837422a)
 
 Event sourcing is similar to Change Data Capture, except that instead of writing to a database and then propagating those changes _via_ a message broker to another data store, we write directly to the message broker itself.
 
@@ -1470,9 +1748,9 @@ Time series databases use hypertables to optimize reads and writes. A **hypertab
 
 |       | Sensor 1 | Sensor2 | Sensor3 |
 | ----- | -------- | ------- | ------- |
-| 1-2PM |          |         |
-| 2-3PM |          |         |
-| 3-4PM |          |         |
+| 1-2PM |          |         |         |
+| 2-3PM |          |         |         |
+| 3-4PM |          |         |         |
 
 Each cell in the table above would correspond to a chunk of data for a given sensor between a given time interval.
 
@@ -1582,7 +1860,7 @@ The process for establishing a connection is via a 3-way handshake:
 
 TCP tries to guarantee reliable delivery using sequence numbers to confirm message receipt. This operates similarly to the handshake, send a message with a sequence number and expect an acknowledgment with the sequence number + 1
 
-TCP also uses timeouts to retry whenever it doesn't receive an acknowledgement. For example, it sends a message with a sequence number, then wait for a set period before retrying the message. It uses a strategy called _exponential backoff_ to prevent spamming the network. Exponential backoff
+TCP also uses timeouts to retry whenever it doesn't receive an acknowledgement. For example, it sends a message with a sequence number, then waits for a set period before retrying the message. The amount of time it waits between retries increases exponentially; this is a strategy known as _exponential backoff_.
 
 ### Flow and Congestion control
 
@@ -1790,7 +2068,7 @@ In this section, we'll take a look at how software systems are typically organiz
 
 A **Monolithic architecture** is a singular system with one code base that couples all business concerns together. These are convenient early on in a project's life since they're easy to understand and manage. Testing and debugging is streamlined since we just have a single codebase or service, and we don't need to coordinate business logic across multiple endpoints which might give us some nice performance benefits.
 
-However as a system grows, some major problems begin to arise: For one thing, we have a single point of failure so our system is less reliable. We also can't scale up individual parts of our system independently, or use different technologies for each part since its one giant codebase. Finally, making changes requires updating and deploying the entire system, which can be slow and inefficient.
+However as a system grows, some major problems begin to arise: For one thing, we have a single point of failure so our system is less reliable. We also can't scale up individual parts of our system independently, or use different technologies for each part since it's one giant codebase. Finally, making changes requires updating and deploying the entire system, which can be slow and inefficient.
 
 ### Microservices
 
@@ -1842,7 +2120,7 @@ Kibana is an analytics and visualization platform which serves as the view layer
 
 ### From ELK to Elastic Stack
 
-Today, the ELK Stack has evolved to incorporate two new components (X-Pack and Beats) and is now more commonly referred to as the "Elastic stack". X-Pack is a pack of features which provide additional functionality on top of ElasticSearch, such as graph visualizations and machine learning based anomaly detection. Beats is a event publishing agent that can be installed on your microservice hosts to standardize how you publish your log files (FileBeat) and metrics (MetricBeat).
+Today, the ELK Stack has evolved to incorporate two new components (X-Pack and Beats) and is now more commonly referred to as the "Elastic stack". X-Pack is a pack of features which provide additional functionality on top of ElasticSearch, such as graph visualizations and machine learning based anomaly detection. Beats is an event publishing agent that can be installed on your microservice hosts to standardize how you publish your log files (FileBeat) and metrics (MetricBeat).
 
 **Note:** The ELK stack started off as a fully open source project, but has recently become a proprietary, managed offering provided by the Elastic NV company after transitioning from the Apache License v2 to the dual Server Side Public License and Elastic License. AWS provides alternatives to Elasticsearch and Kibana under the old Apache License in the form of OpenSearch and OpenSearch Dashboards.
 

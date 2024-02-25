@@ -1,9 +1,9 @@
 # MapReduce
 
-MapReduce is a programming model or pattern within the Hadoop framework that allows us to perform batch processing of big data sets. There are a few main advantages to using MapReduce:
+MapReduce is a programming model or pattern within the Hadoop framework that allows us to perform batch processing of big data sets. There are a few advantages to using MapReduce:
 
-- We can run arbitrary code, we just define custom mappers and reducers
-- Run computations on the same nodes that hold the data for data locality benefits
+- We can run arbitrary code with custom mappers and reducers
+- We can run computations on the same nodes that hold the data, granting us data locality benefits
 - Failed mappers/reducers can be restarted independently
 
 As the name implies, Mappers and Reducers are the basic building blocks of MapReduce:
@@ -15,11 +15,11 @@ As the name implies, Mappers and Reducers are the basic building blocks of MapRe
 
 Every data node will have a bunch of unformatted data stored on disk. The MapReduce process then proceeds as follows (in memory on each data node):
 
-- Map over all the data and turn it into key-value pairs using our Mappers
-- Sort the keys. We'll explain why we do this later, but the gist is that it's easier to operate on sorted lists when we reduce.
-- Shuffle the keys by hashing them and sending them to the node corresponding to the hash. This will ensure all the key-value pairs with the same key go to the same node. The sorted order of the keys is maintained on each node.
-- Reduce the key-value pairs. We'll have a bunch of key-value pairs at this point that have the same key. We want to take all those and reduce it to just a single key-value pair for each key.
-- Materialize the reduced data to disk
+1. Map over all the data and turn it into key-value pairs using our Mappers
+2. Sort the keys. We'll explain why we do this later, but the gist is that it's easier to operate on sorted lists when we reduce.
+3. Shuffle the keys by hashing them and sending them to the node corresponding to the hash. This will ensure all the key-value pairs with the same key go to the same node. The sorted order of the keys is maintained on each node.
+4. Reduce the key-value pairs. We'll have a bunch of key-value pairs at this point that have the same key. We want to take all those and reduce it to just a single key-value pair for each key.
+5. Materialize the reduced data to disk
 
 Here's a diagram of what that process might look like:
 
