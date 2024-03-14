@@ -16,6 +16,8 @@ The **DNS resolver** is a server that's responsible for sending and coordinating
 
 3. Authoritative Nameserver: the final level of the hierarchy which provides an authoritative answer for a given domain query. This is where the full domain name mapping record is stored (e.g. google.com, amazon.com).
 
+![DNS-server-hierarchy](https://firebasestorage.googleapis.com/v0/b/system-design-daily.appspot.com/o/dns-server-hierarchy.png?alt=media&token=d85da82e-046e-4d9b-ae77-9ff0157c0a52)
+
 ## How A Domain Gets Resolved
 
 Let's take a look at an example where a user types "www.google.com" into their browser.

@@ -20,7 +20,7 @@ When a client and server agree to use TLS, they use a handshake procedure to agr
 
    a. The client encrypts a random number with the server's public encryption key, which the server then decrypts with its private key. Both then use this random number to generate a unique session key for subsequent encryption/decryption.
 
-   b. The client and server use the [Diffie-Helman]() key exchange algorithm to securely generate a random and unique session key. This gives us the nice benefit of ensuring that the session cannot be decrypted even if the private key leaks on the server, which is known as _forward secrecy_
+   b. The client and server use the [Diffie-Helman](https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange) key exchange algorithm to securely generate a random and unique session key. This gives us the nice benefit of ensuring that the session cannot be decrypted even if the private key leaks on the server, which is known as _forward secrecy_
 
 ## TLS Termination
 
