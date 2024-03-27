@@ -2,7 +2,7 @@
 
 Big Data systems like Hadoop aren't great for storing static content because we’re not planning to run any compute over it, we generally just want to store and retrieve it later. In other words, we're wasting CPU resources when we want more disk space
 
-**Object store** is a data storage architecture for storing unstructured data. As the name implies, it's mainly used for storing **objects**, which can be any kind of file (video, image, text, etc.). As a result, they are _schemaless_.
+An **object store** is a data storage architecture for storing unstructured data. As the name implies, it's mainly used for storing **objects**, which can be any kind of file (video, image, text, etc.). As a result, they are _schemaless_.
 
 Every object in the object store has 4 components:
 
