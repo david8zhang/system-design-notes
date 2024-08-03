@@ -1,6 +1,6 @@
 # Relational/Non-Relational Data
 
-Relational data, or the relational model for representing data, is an intuitive, straightforward way of representing data in tables. Each table in our relational database only represents one type of data model. Relationships between tables are represented using _foriegn IDs_, which map two rows in two tables together. For example:
+Relational data, or the relational model for representing data, is an intuitive, straightforward way of representing data in tables. Each table in our relational database only represents one type of data model. Relationships between tables are represented using _foreign IDs_, which map two rows in two tables together. For example:
 
 We have a companies table representing our companies
 
@@ -58,7 +58,7 @@ Nonrelational data uses a _denormalized_ data model. For example, we could repre
 
 Now, we have better data locality since we don't have to query a company table and cities table separately to get the joined company offices results, everything we need is contained right there in the dictionary.
 
-However, this means that we have repeated data keys ("San Francisco", and "New York"). Not only does this mean we need to store more data, this also means modifying our data could potentially be more complicated. If we wanted to remove "New York" from our list of cities, we'd need to update our data in multiple places.
+However, this means that we have repeated data keys ("San Francisco" and "New York"). Not only does this mean we need to store more data, this also means modifying our data could potentially be more complicated. If we wanted to remove "New York" from our list of cities, we'd need to update our data in multiple places.
 
 ## Relational vs. Non-Relational?
 

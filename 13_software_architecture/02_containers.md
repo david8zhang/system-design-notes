@@ -2,7 +2,7 @@
 
 A **container** is a standard unit of software that packages up code and all its dependencies for reliable, efficient execution and deployment. In the context of microservices, each service might be using different technologies and runtimes. Containers allow us to bundle these up in a nice, scalable way.
 
-A widely used platform for building and maintaing software containers is [Docker](https://www.docker.com/)
+A widely used platform for building and maintaning software containers is [Docker](https://www.docker.com/)
 
 ## Virtual Machines v.s Containers
 
